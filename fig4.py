@@ -13,9 +13,9 @@ class Machine:
         self.sigma = np.zeros(K)
         self.tau = 0
 
-    def update_tau(self, X: np.ndarray):
-        self.sigma = np.sign(np.sum(self.W * X, axis=1))  # output of each perceptron
-        self.tau = np.prod(self.sigma)  # total output tau
+    def get_tau(self, X: np.ndarray):
+        self.sigma = np.sign(np.sum(self.W * X, axis=1))
+        self.tau = np.prod(self.sigma)
 
     def update_weights(self, X: np.ndarray):
         condition = self.sigma == self.tau
@@ -35,8 +35,8 @@ def train(L, N, K, num_runs=5000):
 
         while True:
             X = np.random.choice([-1, 1], size=(N))
-            S.update_tau(X)
-            R.update_tau(X)
+            S.get_tau(X)
+            R.get_tau(X)
 
             if S.tau == R.tau:
                 S.update_weights(X)
