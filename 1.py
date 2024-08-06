@@ -18,10 +18,9 @@ class Machine:
         self.tau = np.prod(self.sigma)
 
     def update_weights(self, X: np.ndarray):
-        condition = self.sigma == self.tau
         for k in range(self.K):
-            if condition[k]:
-                self.W[k] -= X * self.sigma[k]
+            if self.tau * self.sigma[k] > 0:
+                self.W[k] -= X * self.tau
         self.W = np.clip(self.W, -self.L, self.L)
 
 
@@ -52,8 +51,8 @@ def train(L, N, K, num_runs=5000):
 # Parameter configuration
 L = 3
 K = 3
-N_values = [11, 101, 1001]
-colors = ['r', 'g', 'b']
+N_values = [11]
+colors = ['r']
 labels = [f'N = {N}' for N in N_values]
 
 # Plot histograms
