@@ -79,17 +79,33 @@ def train(L, N, K, num_runs=5000):
 
 
 if __name__ == "__main__":
-    L = 3  # Range limit for weights
-    K = 3  # Number of output neurons
-    N_values = [11, 101, 1001]
-    num_runs = 5000
+    L = 3
+    K = 3
+    N_values = [11, 21, 51, 101, 1001]
+    labels = [f'N = {N}' for N in N_values]
 
+    # Calculate average sync time for each N
+    avg_sync_times = []
     for N in N_values:
-        step_counts = train(L, N, K, num_runs)
-        plt.hist(step_counts, bins=40, alpha=0.5, label=f'N = {N}')
+        step_counts = train(L, N, K)
+        avg_sync_time = np.mean(step_counts)
+        avg_sync_times.append(avg_sync_time)
 
-    plt.xlabel('t_sync')
-    plt.ylabel('Frequency')
-    plt.title(f'Distribution of Synchronization Steps, L = {L}, K = {K}')
-    plt.legend()
+    # Plot with different colors for each point
+    colors = plt.cm.viridis(np.linspace(0, 1, len(N_values)))
+    for i, (N, color) in enumerate(zip(N_values, colors)):
+        x = 1 / N
+        y = avg_sync_times[i]
+        plt.scatter(x, y, color=color, label=f'N={N}')
+        plt.text(x, y, f'{y:.1f}', ha='left', va='bottom')
+
+    # Manually set the x-axis range
+    plt.xlim([-0.005, max([1/N for N in N_values]) + 0.012])
+
+    # Add legend in the lower right corner
+    plt.legend(loc='lower right')
+
+    plt.xlabel('1/N')
+    plt.ylabel('Average t_sync')
+    plt.title(f'Average Synchronization Time, L = {L}, K = {K}')
     plt.show()
