@@ -14,22 +14,24 @@ if __name__ == "__main__":
        这防止了意外的副作用，并确保每个新进程中仅运行必要的代码部分
     """
     # Params
-    np.random.seed(1337)
     L = 3
     K = 3
     N_values = [11, 101, 1001]
-    colors = ['lightcoral', 'lightgreen', 'black']
+    colors = ['coral', 'green', 'black']
     labels = [f'N = {N}' for N in N_values]
+
     # Plot
     for N, color, label in zip(N_values, colors, labels):
         step_counts = train(L, N, K)
-        histtype, alpha = ('stepfilled', 0.5) if N in [11, 101] else ('step', 1)
+        histtype = 'stepfilled' if N in [11, 101] else 'step'
+        alpha = 0.5 if N in [11, 101] else 1
         plt.hist(
             step_counts,
             bins=40,
             color=color,
             label=label,
-            histtype=histtype
+            histtype=histtype,
+            alpha=alpha
         )
 
     plt.xlabel('t_sync')

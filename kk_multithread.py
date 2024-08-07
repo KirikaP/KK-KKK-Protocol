@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class KKNetwork:
-    def __init__(self, L: int, N: int, K: int):
+    def __init__(self, L: int, N: int, K: int, zero_replacement: int):
         self.L = L
         self.L_list = np.arange(-L, L + 1)
         self.N = N
@@ -13,9 +13,11 @@ class KKNetwork:
         self.W = np.random.choice(self.L_list, size=(K, N))
         self.Y = np.zeros(K)
         self.O = 0
+        self.zero_replacement = zero_replacement
 
     def get_Y(self, X: np.ndarray):
         self.Y = np.sign(np.sum(self.W * X, axis=1))
+        self.Y[self.Y == 0] = self.zero_replacement
 
     def get_O(self):
         self.O = np.prod(self.Y)
@@ -28,19 +30,17 @@ class KKNetwork:
 
 
 def single_update(L, N, K):
-    S = KKNetwork(L, N, K)
-    R = KKNetwork(L, N, K)
+    S = KKNetwork(L, N, K, zero_replacement=1)
+    R = KKNetwork(L, N, K, zero_replacement=-1)
     step_count = 0
 
     while True:
-        X = np.random.choice([-1, 1], size=(N))
+        X = np.random.choice([-1, 1], size=N)
 
         S.get_Y(X)
-        S.Y[S.Y == 0] = 1
         S.get_O()
 
         R.get_Y(X)
-        R.Y[R.Y == 0] = -1
         R.get_O()
 
         if S.O * R.O > 0:
@@ -53,10 +53,9 @@ def single_update(L, N, K):
             return step_count
 
 
-def train(L, N, K, num_runs=5008):
+def train_networks(L, N, K, num_runs=5000):
     step_counts = []
 
-    # Use ProcessPoolExecutor to parallelize runs
     with ProcessPoolExecutor() as executor:
         futures = [executor.submit(single_update, L, N, K) for _ in range(num_runs)]
 
@@ -76,29 +75,23 @@ if __name__ == "__main__":
     L = 3
     K = 3
     N_values = [11, 21, 51, 101, 1001]
-    labels = [f'N = {N}' for N in N_values]
-
-    # Calculate average sync time for each N
     avg_sync_times = []
+
     for N in N_values:
-        step_counts = train(L, N, K)
+        step_counts = train_networks(L, N, K)
         avg_sync_time = np.mean(step_counts)
         avg_sync_times.append(avg_sync_time)
 
-    # Plot with different colors for each point
     colors = plt.cm.viridis(np.linspace(0, 1, len(N_values)))
+
     for i, (N, color) in enumerate(zip(N_values, colors)):
         x = 1 / N
         y = avg_sync_times[i]
         plt.scatter(x, y, color=color, label=f'N={N}')
         plt.text(x, y, f'{y:.1f}', ha='left', va='bottom')
 
-    # Manually set the x-axis range
-    plt.xlim([-0.005, max([1/N for N in N_values]) + 0.012])
-
-    # Add legend in the lower right corner
+    plt.xlim([-0.005, max([1 / N for N in N_values]) + 0.012])
     plt.legend(loc='lower right')
-
     plt.xlabel('1/N')
     plt.ylabel('Average t_sync')
     plt.title(f'Average Synchronization Time, L = {L}, K = {K}')
