@@ -53,7 +53,7 @@ def single_update(L, N, K):
             return step_count
 
 
-def train_networks(L, N, K, num_runs=5000):
+def train(L, N, K, num_runs=5000):
     step_counts = []
 
     with ProcessPoolExecutor() as executor:
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     avg_sync_times = []
 
     for N in N_values:
-        step_counts = train_networks(L, N, K)
+        step_counts = train(L, N, K)
         avg_sync_time = np.mean(step_counts)
         avg_sync_times.append(avg_sync_time)
 
