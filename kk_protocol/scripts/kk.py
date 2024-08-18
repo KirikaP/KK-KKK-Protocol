@@ -17,10 +17,12 @@ class KKNetwork:
         self.L_list = np.arange(-L, L + 1)
         self.N = N
         self.K = K
-        self.W = np.random.choice(self.L_list, size=(K, N))
-        self.Y = np.zeros(K)
-        self.O = 0
         self.zero_replacement = zero_replacement
+        self.initialize_weights()
+
+    def initialize_weights(self):
+        """Initialize the weights for the network."""
+        self.W = np.random.choice(self.L_list, size=(self.K, self.N))
 
     def update_O(self, X: np.ndarray):
         # X is now a K*N matrix where each row is the input for each hidden unit
@@ -32,45 +34,42 @@ class KKNetwork:
         for k in range(self.K):
             if self.O * self.Y[k] > 0:
                 self.W[k] -= self.O * X[k]  # Update weights with the corresponding input vector
+
+        # Apply boundary condition
         self.W = np.clip(self.W, -self.L, self.L)
 
 
-def convergence_steps(S, R, max_steps=10000):
-    step_count = 0
+def single_update(S, R):
+    # Generate a unique K*N matrix for input X, where each row corresponds to a different hidden unit
+    X = np.random.choice([-1, 1], size=(S.K, S.N))
 
-    while step_count < max_steps:
-        # Generate a unique K*N matrix for input X, where each row corresponds to a different hidden unit
-        X = np.random.choice([-1, 1], size=(S.K, S.N))
+    S.update_O(X)
+    R.update_O(X)
 
-        S.update_O(X)
-        R.update_O(X)
+    if S.O * R.O < 0:
+        # print("S.O * R.O < 0")
+        S.update_weights(X)
+        R.update_weights(X)
 
-        if S.O * R.O > 0:
-            S.update_weights(X)
-            R.update_weights(X)
-
-        step_count += 1
-
-        if np.array_equal(S.W, R.W):
-            break
-
-    return step_count
+    return np.array_equal(S.W, -R.W)
 
 
-def worker(S, R, max_steps=10000):
-    S_copy = KKNetwork(S.L, S.N, S.K, S.zero_replacement)
-    R_copy = KKNetwork(R.L, R.N, R.K, R.zero_replacement)
-    S_copy.W = np.copy(S.W)
-    R_copy.W = np.copy(R.W)
-    return convergence_steps(S_copy, R_copy, max_steps=max_steps)
-
-
-def train(S, R, num_runs=5000, max_steps=10000):
+def train(L, N, K, zero_replacement, num_runs=5000):
     step_counts = []
 
     for _ in tqdm(range(num_runs)):
-        result = worker(S, R, max_steps=max_steps)
-        step_counts.append(result)
+        # Create new networks for each run
+        S = KKNetwork(L, N, K, zero_replacement=1)
+        R = KKNetwork(L, N, K, zero_replacement=-1)
+
+        steps = 0
+        while True:
+            # Perform a single update step
+            if single_update(S, R):
+                break
+            steps += 1
+
+        step_counts.append(steps)
 
     return step_counts
 
@@ -80,19 +79,17 @@ if __name__ == "__main__":
     np.random.seed(114)
     L = 3
     K = 3
-    N = 10  # Using N = 10 which is causing slow performance
-    max_steps = 10000  # Add a maximum step count to avoid infinite loops
+    N = 100
 
-    # Plotting
-    S = KKNetwork(L, N, K, zero_replacement=1)
-    R = KKNetwork(L, N, K, zero_replacement=-1)
-    step_counts = train(S, R, num_runs=100, max_steps=max_steps)  # Reduced num_runs for testing
-
+    # Train and get the convergence steps
+    step_counts = train(L, N, K, zero_replacement=1, num_runs=5000)
+    
+    # Plotting the histogram
     plt.hist(
         step_counts,
-        bins=40,
+        bins=64,
         color='coral',
-        label='N = 10',
+        label='N = 100',
         histtype='barstacked',
     )
 
