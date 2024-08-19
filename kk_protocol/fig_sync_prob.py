@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.kk_multithread import train, KKNetwork
+from scripts.multithread_train import train_pm
 
 
 def calculate_probs(sync_steps, num_intervals=20, smooth=False):
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     markers = ['o', '^', 's', 'D']
 
     for N, color, label, marker in zip(N_values, colors, labels, markers):
-        sync_steps = train(L, N, K, num_runs=5000)
+        sync_steps = train_pm(L, N, K, num_runs=5000)
         scatter_probs = calculate_probs(sync_steps)
         smooth_probs = calculate_probs(sync_steps, smooth=True)
         filtered_scatter_probs = [

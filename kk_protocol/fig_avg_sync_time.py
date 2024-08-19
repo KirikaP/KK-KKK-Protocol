@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.kk_multithread import train
+from scripts.multithread_train import train_pm
 
 
 def simulate(L, K, N_values):
-    return [np.mean(train(L, N, K)) for N in N_values]
+    return [np.mean(train_pm(L, N, K)) for N in N_values]
 
 
 if __name__ == "__main__":

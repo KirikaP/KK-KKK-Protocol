@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.kk_multithread import train
+from scripts.multithread_train import train_pm
 
 
 def filter_steps(L, K, N_values, max_t_sync=3000, num_runs=5000):
     N_step_counts = []
     for N in N_values:
-        step_counts = train(L, N, K, num_runs=num_runs)
+        step_counts = train_pm(L, N, K, num_runs=num_runs)
         filtered_step_counts = [
             count for count in step_counts if count <= max_t_sync
         ]
