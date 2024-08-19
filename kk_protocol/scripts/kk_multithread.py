@@ -1,112 +1,72 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 class KKNetwork:
-    """
-    L: integer weights bounded by [-L, L]
-    K: number of hidden units
-    N: each hidden unit size
-    zero_replace: value to replace zero with
-    W: weights, a K*N matrix
-    Y: hidden unit output, should be a list of K elements
-    O: output bit, the product of all Y
-    """
-    def __init__(self, L: int, N: int, K: int, zero_replace: int):
-        self.L = L
-        self.L_list = np.arange(-L, L + 1)
-        self.N = N
-        self.K = K
+    def __init__(self, L, N, K, zero_replace):
+        self.L, self.N, self.K = L, N, K
+        self.W = np.random.choice(np.arange(-L, L + 1), size=(K, N))
         self.zero_replace = zero_replace
-        self.initialize_weights()
 
-    def initialize_weights(self):
-        """Initialize the weights for the network."""
-        self.W = np.random.choice(self.L_list, size=(self.K, self.N))
-
-    def update_O(self, X: np.ndarray):
-        # X is now a K*N matrix where each row is the input for each hidden unit
+    def update_O(self, X):
         self.Y = np.sign(np.sum(self.W * X, axis=1))
-        self.Y[self.Y == 0] = self.zero_replace
+        self.Y[self.Y == 0] = self.zero_replace  # replace 0 with 1(S) or -1(R)
         self.O = np.prod(self.Y)
 
-    def update_weights(self, X: np.ndarray):
+    def update_W(self, X):
         for k in range(self.K):
-            if self.O * self.Y[k] > 0:
-                self.W[k] -= self.O * X[k]  # Update weights with the corresponding input vector
+            if self.O * self.Y[k] > 0:  # if k-th unit is not sync
+                self.W[k] -= self.O * X[k]  # updates W line by line
+        self.W = np.clip(self.W, -self.L, self.L)  # clip W to [-L, L]
 
-        # Apply boundary condition
-        self.W = np.clip(self.W, -self.L, self.L)
+    def is_sync(self, receiver):
+        # check if the sender and receiver are sync
+        return np.array_equal(self.W, -receiver.W)
 
-
-def single_update(S, R):
-    step_count = 0
-
-    while True:
-        # Generate a unique K*N matrix for input X, where each row corresponds to a different hidden unit
-        X = np.random.choice([-1, 1], size=(S.K, S.N))
-
-        S.update_O(X)
-        R.update_O(X)
-
-        if S.O * R.O < 0:
-            S.update_weights(X)
-            R.update_weights(X)
-
-        step_count += 1
-
-        if np.array_equal(S.W, -R.W):
-            break
-
-    return step_count
+    def sync(self, receiver, max_steps=10000):
+        steps = 0
+        while not self.is_sync(receiver) and steps < max_steps:
+            X = np.random.choice([-1, 1], size=(self.K, self.N))
+            self.update_O(X); receiver.update_O(X)
+            if self.O * receiver.O < 0:  # update rule according to paper
+                self.update_W(X)
+                receiver.update_W(X)
+            steps += 1
+        return steps if self.is_sync(receiver) else None
 
 
-def worker(L, N, K, zero_replace):
-    S = KKNetwork(L, N, K, zero_replace=1)
-    R = KKNetwork(L, N, K, zero_replace=-1)
-    return single_update(S, R)
-
-
-def train(L, N, K, zero_replace, num_runs=5000):
-    step_counts = []
-
+def train(L, N, K, num_runs=5000):
+    # 创建一个进程池执行器，以便并行执行多个任务
     with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(worker, L, N, K, zero_replace) for _ in range(num_runs)]
+        # 创建一个包含所有异步任务的列表，任务通过 executor.submit 提交
+        futures = [
+            # executor.submit 会提交一个任务到进程池中
+            # 任务的内容是调用 KKNetwork(L, N, K, 1) 实例的 sync 方法
+            # sync 方法的第一个参数 self 自动绑定到这个 KKNetwork 实例
+            # sync 方法的第二个参数 other_network 则是另一个 KKNetwork 实例 KKNetwork(L, N, K, -1)
+            # 换句话说，这里同时实例化了两个 KKNetwork 对象，并将它们用于同步操作
+            executor.submit(
+                KKNetwork(L, N, K, 1).sync,  # 第一个 KKNetwork 对象的 sync 方法
+                KKNetwork(L, N, K, -1)  # 作为 sync 方法的参数传递的第二个 KKNetwork 对象
+            ) for _ in range(num_runs)
+        ]
 
-        for future in tqdm(as_completed(futures), total=num_runs):
-            result = future.result()
-            if result is not None:
-                step_counts.append(result)
-
-    return step_counts
+        return [
+            # as_completed 函数会在每个任务完成时生成一个 future 对象
+            # future.result() 会阻塞直到任务完成，并返回任务的结果
+            future.result() for future in tqdm(as_completed(futures), total=num_runs)
+        ]
 
 
 if __name__ == "__main__":
-    # Parameters
-    np.random.seed(114)
-    L = 3
-    K = 3
-    N = 11
+    L, K, N = 3, 3, 100
+    step_counts = train(L, N, K)
 
-    # Plotting
-    S = KKNetwork(L, N, K, zero_replacement=1)
-    R = KKNetwork(L, N, K, zero_replacement=-1)
-    step_counts = train(S, R, num_runs=5000)
-    plt.hist(
-        step_counts,
-        bins=64,
-        color='coral',
-        label='N = 100',
-        histtype='barstacked',
-    )
-
-    # Labels and Title
+    plt.hist(step_counts, bins=64, color='coral', histtype='barstacked')
     plt.xlabel('t_sync')
-    plt.ylabel('P(t_sync)')
-    plt.title(f'Distribution of t_sync, L = {L}, K = {K}')
-    plt.legend()
+    plt.ylabel('Frequency')
+    plt.title(f'Distribution of t_sync, L = {L}, K = {K}, N = {N}')
     plt.grid(True)
-    plt.tight_layout()
     plt.show()
