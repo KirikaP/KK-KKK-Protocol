@@ -1,37 +1,38 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.kk_multithread import train, KKNetwork
+from scripts.kk_multithread import train
+
+
+def filter_steps(L, K, N_values, max_t_sync=3000, num_runs=5000):
+    N_step_counts = []
+    for N in N_values:
+        step_counts = train(L, N, K, num_runs=num_runs)
+        filtered_step_counts = [
+            count for count in step_counts if count <= max_t_sync
+        ]
+        N_step_counts.append(filtered_step_counts)
+    return N_step_counts
 
 
 if __name__ == "__main__":
-    # Parameters
-    L = 3
-    K = 3
-    N_values = [11, 101, 1001]
-    colors = ['coral', 'green', 'black']
-    labels = [f'N = {N}' for N in N_values]
+    np.random.seed(114)
+    L, K, N_values = 3, 3, [10, 100, 1000]
+    colors = ['green', 'orange', 'black']
+    N_step_counts = filter_steps(L, K, N_values)
 
-    # Plotting
-    for N, color, label in zip(N_values, colors, labels):
-        S = KKNetwork(L, N, K, zero_replacement=1)
-        R = KKNetwork(L, N, K, zero_replacement=-1)
-        step_counts = train(S, R)
-        histtype = 'stepfilled' if N in [11, 101] else 'step'
-        alpha = 0.5 if N in [11, 101] else 1
+    for N, color, step_counts in zip(N_values, colors, N_step_counts):
         plt.hist(
             step_counts,
-            bins=40,
+            bins=int(np.floor(max(step_counts)/40)),
             color=color,
-            label=label,
-            histtype=histtype,
-            alpha=alpha
+            label=f'N = {N}',
+            histtype='stepfilled' if N in [10, 100] else 'step',
+            alpha=0.5 if N in [10, 100] else 1
         )
 
-    # Labels and Title
     plt.xlabel('t_sync')
     plt.ylabel('P(t_sync)')
     plt.title(f'Distribution of t_sync, L = {L}, K = {K}')
-    plt.legend()
+    plt.legend(loc='upper right')
     plt.grid(True)
-    plt.tight_layout()
     plt.show()

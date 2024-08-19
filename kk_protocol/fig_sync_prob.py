@@ -5,73 +5,71 @@ from scripts.kk_multithread import train, KKNetwork
 
 def calculate_probs(sync_steps, num_intervals=20, smooth=False):
     trials = len(sync_steps)
-    max_step = max(sync_steps)
-    sorted_steps = np.sort(sync_steps)
-
-    if smooth:
-        # For smooth probabilities, calculate probability at every step
-        steps = range(1, max_step + 1)
-    else:
-        # For interval-based scatter plot
-        steps = np.percentile(sorted_steps, np.linspace(0, 100, num_intervals + 1))
-
-    probs = []
-    for step in steps:
-        successful_syncs = sum(1 for s in sync_steps if s <= step)
-        probability = successful_syncs / trials
-        probs.append((step, probability))
-
-    return probs
+    steps = (
+        range(1, max(sync_steps) + 1) if smooth else
+        np.percentile(
+            np.sort(sync_steps),
+            np.linspace(0, 100, num_intervals + 1)
+        )
+    )
+    return [
+        (step, sum(1 for s in sync_steps if s <= step) / trials)
+        for step in steps
+    ]
 
 
 if __name__ == "__main__":
-    # Parameters
     np.random.seed(114)
-    L = 3
-    K = 3
-    N_values = [10, 100, 1000]  # Different N values for testing
-    colors = ['coral', 'green', 'black']
+    L, K, N_values = 3, 3, [10, 16, 30, 1000]
+    colors = ['red', 'green', 'blue', 'black']
     labels = [f'N = {N}' for N in N_values]
-    markers = ['^', 's', 'D']
+    markers = ['o', '^', 's', 'D']
 
-    # Plotting
-    plt.figure(figsize=(10, 6))
     for N, color, label, marker in zip(N_values, colors, labels, markers):
-        # Initialize networks
-        S = KKNetwork(L, N, K, zero_replacement=1)
-        R = KKNetwork(L, N, K, zero_replacement=-1)
-        
-        # Train networks and get synchronization steps
-        sync_steps = train(S, R, num_runs=5000)
-
-        # Calculate interval-based probabilities for scatter plot
-        scatter_probs = calculate_probs(sync_steps, smooth=False)
-        # Calculate smooth probabilities for line plot
+        sync_steps = train(L, N, K, num_runs=5000)
+        scatter_probs = calculate_probs(sync_steps)
         smooth_probs = calculate_probs(sync_steps, smooth=True)
+        filtered_scatter_probs = [
+            (step, prob) for step, prob in scatter_probs if prob >= 0.65
+        ]
 
-        # Extract steps and corresponding probabilities for scatter plot
-        steps, probs = zip(*scatter_probs)
-        # Extract steps and corresponding probabilities for smooth line plot
-        smooth_steps, smooth_probs = zip(*smooth_probs)
+        if filtered_scatter_probs:
+            plt.scatter(
+                *zip(*filtered_scatter_probs),
+                label=label,
+                color=color,
+                marker=marker,
+                facecolors='none',
+                edgecolors=color
+            )
 
-        # Plot probability scatter
-        plt.scatter(
-            steps,
-            probs,
-            label=label,
+        for step, prob in scatter_probs:
+            if prob == 1.0:
+                plt.axvline(
+                    x=step,
+                    color=color,
+                    linestyle=':',
+                    alpha=0.6
+                )  # 绘制虚线到x轴
+                plt.text(
+                    step,
+                    1.02,
+                    f'{step}',
+                    ha='center',
+                    va='bottom',
+                    color=color
+                )
+
+        plt.plot(
+            *zip(*smooth_probs),
+            linestyle='--',
             color=color,
-            marker=marker,
-            facecolors='none',
-            edgecolors=color
+            alpha=0.6
         )
-        # Plot smooth line
-        plt.plot(smooth_steps, smooth_probs, linestyle='--', color=color, alpha=0.6)
 
-    # Labels, title, legend, and grid
     plt.xlabel('Steps')
-    plt.ylabel('Synchronization Probability')
-    plt.title(f'Synchronization Probability vs. Steps (L = {L}, K = {K})')
+    plt.ylabel('Sync Prob')
+    plt.title(f'Sync Prob vs. Steps (L = {L}, K = {K})')
     plt.legend()
     plt.grid(True)
-    plt.tight_layout()
     plt.show()
