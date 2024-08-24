@@ -1,21 +1,23 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.multithread_train import train_pm
+from scripts.party_machine import PM, train_PMs
 
 
 def filter_steps(L, K, N_values, max_t_sync=3000, num_runs=5000):
     N_step_counts = []
     for N in N_values:
-        step_counts = train_pm(L, N, K, num_runs=num_runs)
-        filtered_step_counts = [
-            count for count in step_counts if count <= max_t_sync
-        ]
+        sender = PM(L, N, K, zero_replace=1)
+        receiver = PM(L, N, K, zero_replace=-1)
+
+        step_counts = train_PMs(sender, receiver, num_runs=num_runs)
+
+        filtered_step_counts = [count for count in step_counts if count <= max_t_sync]
         N_step_counts.append(filtered_step_counts)
+
     return N_step_counts
 
 
 if __name__ == "__main__":
-    np.random.seed(114)
     L, K, N_values = 3, 3, [10, 100, 1000]
     colors = ['green', 'orange', 'black']
     N_step_counts = filter_steps(L, K, N_values)
