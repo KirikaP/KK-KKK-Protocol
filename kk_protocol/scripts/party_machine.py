@@ -9,7 +9,6 @@ class PM:
     between networks.
 
     Attributes:
-    -----------
     L : int
         The range limit for the weight values.
     N : int
@@ -49,15 +48,7 @@ class PM:
 
     def is_sync(self, other):
         """
-        Check if the current network is synchronized with another network.
-
-        Parameters:
-        other : PM
-            Another instance of the PM network to check synchronization with.
-
-        Returns:
-        bool
-            True if the networks are synchronized (W = -other.W), False otherwise.
+        Check if the current network is synchronized with another.
         """
         return np.array_equal(self.W, -other.W)
 
