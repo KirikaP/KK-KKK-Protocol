@@ -46,13 +46,16 @@ class PM:
                 self.W[k] -= self.O * X[k]  # updates W line by line
         self.W = np.clip(self.W, -self.L, self.L)  # clip W to [-L, L]
 
-    def is_sync(self, other):
+    def is_sync(self, other, case=-1):
         """
         Check if the current network is synchronized with another.
         """
-        return np.array_equal(self.W, -other.W)
+        if case == -1:
+            return np.array_equal(self.W, -other.W)
+        elif case == 1:
+            return np.array_equal(self.W, other.W)
 
-    def sync(self, other, stop_on_sync=True):
+    def sync(self, other):
         """
         Synchronize the current network with another network by iteratively updating weights.
 
@@ -76,13 +79,13 @@ class PM:
                 self.update_W(X)
                 other.update_W(X)
             steps += 1
-            if stop_on_sync and self.is_sync(other):
+            if self.is_sync(other):
                 break
 
         return steps
 
 
-def train_PMs(pm1, pm2, num_runs=5000, stop_on_sync=True):
+def train_PMs(pm1, pm2, num_runs=5000):
     """
     Train two PM instances by running sync method in parallel.
 
@@ -97,7 +100,7 @@ def train_PMs(pm1, pm2, num_runs=5000, stop_on_sync=True):
     """
     with ProcessPoolExecutor() as executor:
         futures = [
-            executor.submit(pm1.sync, pm2, stop_on_sync)
+            executor.submit(pm1.sync, pm2)
             for _ in range(num_runs)
         ]
 
