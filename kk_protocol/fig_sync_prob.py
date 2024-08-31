@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scripts.party_machine import PM, train_PMs
+from scripts.parity_machine import TreeParityMachine as TPM, train_TPMs
 
 
 def calculate_probs(sync_steps, num_intervals=20, smooth=False):
@@ -25,10 +25,10 @@ if __name__ == "__main__":
     markers = ['o', '^', 's', 'D']
 
     for N, color, label, marker in zip(N_values, colors, labels, markers):
-        sender = PM(L, N, K, zero_replace=1)
-        receiver = PM(L, N, K, zero_replace=-1)
+        sender = TPM(L, N, K, zero_replace=1)
+        receiver = TPM(L, N, K, zero_replace=-1)
 
-        sync_steps = train_PMs(sender, receiver, num_runs=5000)
+        sync_steps = train_TPMs(sender, receiver)
 
         scatter_probs = calculate_probs(sync_steps)
         smooth_probs = calculate_probs(sync_steps, smooth=True)
