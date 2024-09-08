@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
-
+    
 
 def simulate(
     L, K, N_values, num_runs=5000, zero_replace_1=1, zero_replace_2=-1,
