@@ -1,5 +1,8 @@
 import numpy as np
-from .parity_machine import TreeParityMachine as TPM
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
+from parity_machine import TreeParityMachine as TPM
 
 
 def sync(tpm1, tpm2, rule='anti_hebbian', state='anti_parallel'):

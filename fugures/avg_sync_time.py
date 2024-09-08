@@ -1,6 +1,9 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from scripts.train import train_TPMs
+import matplotlib.pyplot as plt
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
+from train import train_TPMs
 
 
 def simulate(
