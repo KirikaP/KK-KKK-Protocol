@@ -11,20 +11,20 @@ def simulate(
     rule='anti_hebbian', state='anti_parallel'
 ):
     """
-    Simulate synchronization of TPMs for different N values and return the average sync time for each N.
+    Simulate synchronization of TPMs for different N values and return the average sync time for each N
 
     Args:
-        L (int): Weight limit range [-L, L].
-        K (int): Number of hidden units.
-        N_values (list of int): Different values of N (number of input bits) to simulate.
-        num_runs (int): Number of runs for each N value.
-        zero_replace_1 (int): Value to replace 0 in tpm1's sigma.
-        zero_replace_2 (int): Value to replace 0 in tpm2's sigma.
-        rule (str): Learning rule for the sync process ('anti_hebbian' by default).
-        state (str): Synchronization state ('anti_parallel' by default).
+        L (int): Weight limit range [-L, L]
+        K (int): Number of hidden units
+        N_values (list of int): Different values of N (number of input bits) to simulate
+        num_runs (int): Number of runs for each N value
+        zero_replace_1 (int): Value to replace 0 in tpm1's sigma
+        zero_replace_2 (int): Value to replace 0 in tpm2's sigma
+        rule (str): Learning rule for the sync process ('anti_hebbian' by default)
+        state (str): Synchronization state ('anti_parallel' by default)
 
     Returns:
-        list: List of average sync times for each N value.
+        list: List of average sync times for each N value
     """
     results = []
     for N in N_values:
@@ -37,13 +37,13 @@ def simulate(
 
 def plot_results(N_values, avg_sync_times, L, K):
     """
-    Plot the average sync time results against 1/N.
+    Plot the average sync time results against 1/N
 
     Args:
-        N_values (list of int): List of N values.
-        avg_sync_times (list of float): List of average sync times.
-        L (int): Weight limit range [-L, L].
-        K (int): Number of hidden units.
+        N_values (list of int): List of N values
+        avg_sync_times (list of float): List of average sync times
+        L (int): Weight limit range [-L, L]
+        K (int): Number of hidden units
     """
     for N, y in zip(N_values, avg_sync_times):
         x = 1 / N

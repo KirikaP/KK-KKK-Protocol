@@ -8,16 +8,16 @@ from train import train_TPMs
 
 def run_experiments(N_values, B_values, num_runs=5000):
     """
-    Run synchronization experiments for different N and B values.
+    Run synchronization experiments for different N and B values
 
     Args:
-        N_values (list of int): Different N values (number of input bits per hidden unit).
-        B_values (list of int or None): Different bit package sizes.
-        num_runs (int): Number of synchronization runs per experiment.
+        N_values (list of int): Different N values (number of input bits per hidden unit)
+        B_values (list of int or None): Different bit package sizes
+        num_runs (int): Number of synchronization runs per experiment
 
     Returns:
         tuple: (B_values, all_results), where all_results is a dict with N as keys
-               and corresponding average synchronization steps as values.
+               and corresponding average synchronization steps as values
     """
     L, K = 3, 3  # Parameters for TreeParityMachine
     all_results = {}

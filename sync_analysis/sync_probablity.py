@@ -11,20 +11,20 @@ def simulate(
     rule='anti_hebbian', state='anti_parallel'
 ):
     """
-    Run simulations for multiple N values.
+    Run simulations for multiple N values
 
     Args:
-        L (int): Weight limit range [-L, L].
-        K (int): Number of hidden units.
-        N_values (list): List of N values to simulate.
-        num_runs (int): Number of runs per N value.
-        zero_replace_1 (int): Zero replacement for the first TPM.
-        zero_replace_2 (int): Zero replacement for the second TPM.
-        rule (str): Learning rule ('hebbian', 'anti_hebbian', 'random_walk').
-        state (str): Synchronization state ('parallel' or 'anti_parallel').
+        L (int): Weight limit range [-L, L]
+        K (int): Number of hidden units
+        N_values (list): List of N values to simulate
+        num_runs (int): Number of runs per N value
+        zero_replace_1 (int): Zero replacement for the first TPM
+        zero_replace_2 (int): Zero replacement for the second TPM
+        rule (str): Learning rule ('hebbian', 'anti_hebbian', 'random_walk')
+        state (str): Synchronization state ('parallel' or 'anti_parallel')
 
     Returns:
-        dict: Dictionary with N values as keys and list of sync steps as values.
+        dict: Dictionary with N values as keys and list of sync steps as values
     """
     results = {}
     for N in N_values:
@@ -35,15 +35,15 @@ def simulate(
 
 def calculate_probs(sync_steps, num_intervals=20, smooth=False):
     """
-    Calculate the probability of synchronization for each step interval.
+    Calculate the probability of synchronization for each step interval
 
     Args:
-        sync_steps (list): List of synchronization step counts.
-        num_intervals (int): Number of intervals to divide the steps into (only used if smooth=False).
-        smooth (bool): If True, calculate probabilities for each step up to max(sync_steps).
+        sync_steps (list): List of synchronization step counts
+        num_intervals (int): Number of intervals to divide the steps into (only used if smooth=False)
+        smooth (bool): If True, calculate probabilities for each step up to max(sync_steps)
 
     Returns:
-        List of (step, probability) tuples.
+        List of (step, probability) tuples
     """
     trials = len(sync_steps)
     if smooth:
@@ -55,14 +55,14 @@ def calculate_probs(sync_steps, num_intervals=20, smooth=False):
 
 def plot_sync_probs(simulation_results, L, K, num_intervals=20, smooth=True):
     """
-    Plot the synchronization probability vs. steps for multiple N values.
+    Plot the synchronization probability vs. steps for multiple N values
 
     Args:
-        simulation_results (dict): Dictionary with N values as keys and list of sync steps as values.
-        L (int): Weight limit range [-L, L].
-        K (int): Number of hidden units.
-        num_intervals (int): Number of intervals for probability calculation (if smooth=False).
-        smooth (bool): Whether to smooth the probability over all steps.
+        simulation_results (dict): Dictionary with N values as keys and list of sync steps as values
+        L (int): Weight limit range [-L, L]
+        K (int): Number of hidden units
+        num_intervals (int): Number of intervals for probability calculation (if smooth=False)
+        smooth (bool): Whether to smooth the probability over all steps
     """
     colors = ['red', 'green', 'blue', 'black']
     markers = ['o', '^', 's', 'D']
