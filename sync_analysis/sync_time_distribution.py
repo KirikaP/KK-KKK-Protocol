@@ -30,7 +30,6 @@ def simulate(
     N_step_counts = []
     for N in N_values:
         print(f"Running N = {N}")
-        # Train TPMs for the current N value
         step_counts = train_TPMs(L, K, N, zero_replace_1, zero_replace_2, num_runs, rule, state)
         # Filter out steps that are greater than max_t_sync
         filtered_step_counts = [count for count in step_counts if count <= max_t_sync]
@@ -73,12 +72,9 @@ def plot_results(N_values, N_step_counts, L, K, bin_width=30, colors=None):
 
 
 if __name__ == "__main__":
-    # Define parameters
     L, K, N_values = 3, 3, [10, 100, 1000]
-    num_runs = 5000  # Number of runs per N value
+    num_runs = 5000
 
-    # Run the simulation and filter step counts
     N_step_counts = simulate(L, K, N_values, num_runs=num_runs)
 
-    # Plot the histograms of filtered t_sync values
     plot_results(N_values, N_step_counts, L, K)
