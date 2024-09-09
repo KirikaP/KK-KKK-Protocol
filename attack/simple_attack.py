@@ -17,12 +17,36 @@ BIN_WIDTH = 0.01  # Histogram bin width
 N_VALUES = [100, 50, 20, 10]  # Different N values to evaluate
 
 def initialize_tpms(L, N, K):
+    """
+    Initialize the Tree Parity Machines (TPMs) for the sender, receiver, and attacker
+
+    Args:
+        L (int): Range of weights
+        N (int): Number of input neurons per hidden neuron
+        K (int): Number of hidden neurons
+
+    Returns:
+        tuple: A tuple containing the sender, receiver, and attacker TPMs
+    """
     sender = TPM(L, N, K, -1)
     receiver = TPM(L, N, K, -1)
     attacker = TPM(L, N, K, -1)
     return sender, receiver, attacker
 
 def attack_step(L, N, K, sync_target, rule):
+    """
+    Perform a single attack step to synchronize the attacker with the target (sender or receiver)
+
+    Args:
+        L (int): Range of weights
+        N (int): Number of input neurons per hidden neuron
+        K (int): Number of hidden neurons
+        sync_target (str): Target for synchronization ('sender' or 'receiver')
+        rule (str): Learning rule ('hebbian', 'anti_hebbian', or 'random_walk')
+
+    Returns:
+        float: The ratio of sync_steps to attack_sync_steps
+    """
     sender, receiver, attacker = initialize_tpms(L, N, K)
     target = sender if sync_target == 'sender' else receiver
     
@@ -61,6 +85,21 @@ def attack_step(L, N, K, sync_target, rule):
     return sync_steps / attack_sync_steps if attack_sync_steps is not None else None
 
 def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
+    """
+    Perform multiple attack simulations to learn the synchronization ratio
+
+    Args:
+        L (int): Range of weights
+        N (int): Number of input neurons per hidden neuron
+        K (int): Number of hidden neurons
+        sync_target (str): Target for synchronization ('sender' or 'receiver')
+        rule (str): Learning rule ('hebbian', 'anti_hebbian', or 'random_walk')
+        num_simulations (int): Number of attack simulations
+        max_workers (int): Number of workers for parallel processing
+
+    Returns:
+        list: A list of synchronization ratios from the simulations
+    """
     ratios = []
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -81,9 +120,17 @@ def plot_results(ratios_dict, bin_width=BIN_WIDTH):
         truncated_ratios = [r for r in ratios if r < 1.0]
         
         if N == 20:
-            plt.hist(truncated_ratios, bins=np.arange(0, 1 + 0.005, bin_width), alpha=0.5, histtype='step', edgecolor='black', label=f'N = {N}')
+            plt.hist(
+                truncated_ratios,
+                bins=np.arange(0, 1 + 0.005, bin_width),
+                alpha=0.5, histtype='step', edgecolor='black', label=f'N = {N}'
+            )
         else:
-            plt.hist(truncated_ratios, bins=np.arange(0, 1 + 0.005, bin_width), alpha=0.5, label=f'N = {N}')
+            plt.hist(
+                truncated_ratios,
+                bins=np.arange(0, 1 + 0.005, bin_width),
+                alpha=0.5, label=f'N = {N}'
+            )
     
     plt.xlabel('Ratio(r) (sync_steps / attack_sync_steps)')
     plt.ylabel('P(r)')
