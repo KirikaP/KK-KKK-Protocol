@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
-from kk_protocol import sync, sync_with_bit_packages
+from protocol import sync, sync_with_bit_packages
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
 
