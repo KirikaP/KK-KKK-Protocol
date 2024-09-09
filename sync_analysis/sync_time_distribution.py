@@ -10,23 +10,6 @@ def simulate(
     L, K, N_values, num_runs=5000, max_t_sync=3000, zero_replace_1=1, zero_replace_2=-1,
     rule='anti_hebbian', state='anti_parallel'
 ):
-    """
-    Filter the step counts for synchronization up to max_t_sync for different N values
-
-    Args:
-        L (int): Weight limit range [-L, L]
-        K (int): Number of hidden units
-        N_values (list): List of different N values (number of input bits)
-        num_runs (int): Number of runs for each N value
-        max_t_sync (int): Maximum synchronization steps to consider
-        zero_replace_1 (int): Value to replace 0 in tpm1's sigma
-        zero_replace_2 (int): Value to replace 0 in tpm2's sigma
-        rule (str): Learning rule for the sync process
-        state (str): Synchronization state
-
-    Returns:
-        List of filtered step counts for each N value
-    """
     N_step_counts = []
     for N in N_values:
         print(f"Running N = {N}")
@@ -38,16 +21,6 @@ def simulate(
     return N_step_counts
 
 def plot_results(N_values, N_step_counts, L, K, bin_width=30, colors=None):
-    """
-    Plot histograms for each N value showing the distribution of t_sync
-
-    Args:
-        N_values (list): List of different N values (number of input bits)
-        N_step_counts (list): List of step counts for each N value
-        L, K (int): Weight limit range [-L, L] and number of hidden units
-        bin_width (int): Width of each histogram bin
-        colors (list): List of colors for each N value histogram
-    """
     if colors is None:
         colors = ['green', 'orange', 'black']  # Default colors
 
