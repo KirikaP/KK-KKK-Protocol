@@ -7,14 +7,6 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
 
-# Constants for the simulation
-L, K = 3, 3  # TPM parameters
-RULE = 'hebbian'  # Learning rule
-SYNC_TARGET = 'sender'  # Synchronization target ('sender' or 'receiver')
-NUM_SIMULATIONS = 2000  # Number of attack simulations
-MAX_WORKERS = 16  # Number of workers for parallel processing
-BIN_WIDTH = 0.01  # Histogram bin width
-N_VALUES = [100, 50, 20, 10]  # Different N values to evaluate
 
 def initialize_tpms(L, N, K):
     """
@@ -49,13 +41,13 @@ def attack_step(L, N, K, sync_target, rule):
     """
     sender, receiver, attacker = initialize_tpms(L, N, K)
     target = sender if sync_target == 'sender' else receiver
-    
+
     steps, sync_steps, attack_sync_steps = 0, None, None
 
     while True:
         # Generate random input vector
         X = np.random.choice([-1, 1], size=(sender.K, sender.N))
-        
+
         # Update tau for all TPMs
         sender.update_tau(X)
         receiver.update_tau(X)
@@ -115,10 +107,17 @@ def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
 
     return ratios
 
-def plot_results(ratios_dict, bin_width=BIN_WIDTH):
+def plot_results(ratios_dict, bin_width):
+    """
+    Plot the results of synchronization ratios for different N values
+
+    Args:
+        ratios_dict (dict): Dictionary of ratios for each N value
+        bin_width (float): Width of histogram bins
+    """
     for N, ratios in ratios_dict.items():
         truncated_ratios = [r for r in ratios if r < 1.0]
-        
+
         if N == 20:
             plt.hist(
                 truncated_ratios,
@@ -131,7 +130,7 @@ def plot_results(ratios_dict, bin_width=BIN_WIDTH):
                 bins=np.arange(0, 1 + 0.005, bin_width),
                 alpha=0.5, label=f'N = {N}'
             )
-    
+
     plt.xlabel('Ratio(r) (sync_steps / attack_sync_steps)')
     plt.ylabel('P(r)')
     plt.title('Distribution between Ratio(r) and N Values')
@@ -139,14 +138,21 @@ def plot_results(ratios_dict, bin_width=BIN_WIDTH):
     plt.legend(title="N Values")
     plt.show()
 
+
 if __name__ == "__main__":
-    # Dictionary to store ratios for different N values
+    L, K = 3, 3
+    rule = 'hebbian'  # Learning rule
+    sync_target = 'sender'  # Synchronization target ('sender' or 'receiver')
+    num_simulations = 2000  # Number of attack simulations
+    max_workers = 8  # Number of workers for parallel processing
+    bin_width = 0.01  # Histogram bin width
+    N_values = [100, 50, 20, 10]  # Different N values to evaluate
+
     ratios_dict = {}
 
-    for N in N_VALUES:
+    for N in N_values:
         print(f"Running N = {N}...")
-        ratios = attacker_learn(L, N, K, SYNC_TARGET, RULE, NUM_SIMULATIONS, MAX_WORKERS)
+        ratios = attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers)
         ratios_dict[N] = ratios
 
-    # Plot the results
-    plot_results(ratios_dict)
+    plot_results(ratios_dict, bin_width)
