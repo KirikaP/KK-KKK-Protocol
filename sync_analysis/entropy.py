@@ -19,10 +19,10 @@ def calculate_uniform_entropy(L):
 if __name__ == '__main__':
     K, N = 3, 100
     zero_replace_1, zero_replace_2 = -1, -1
-    num_runs = 500
+    num_runs = 5000
     state = 'parallel'
     learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']
-    L_values = range(1, 7)
+    L_values = range(4, 7)
     all_avg_entropy = {rule: [] for rule in learning_rules}
 
     for rule in learning_rules:
