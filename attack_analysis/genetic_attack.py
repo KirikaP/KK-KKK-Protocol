@@ -7,119 +7,141 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
 
-
-# 参数设置
-L = 3  # 权重范围
-N = 100  # 输入大小
-K = 3  # 感知器个数
-M = 2500  # 最大攻击者数量
-rule = 'hebbian'  # 学习规则
-sync_target = 'sender'  # 攻击的目标（sender 或 receiver）
+# Parameter settings
+L = 3  # Weight range
+N = 100  # Input size
+K = 3  # Number of perceptrons
+M = 2500  # Maximum number of attackers
+rule = 'hebbian'  # Learning rule
+sync_target = 'sender'  # Target of the attack (sender or receiver)
 num_simulations = 1000
-
-def initialize_tpms(L, N, K):
-    sender = TPM(L, N, K, -1)
-    receiver = TPM(L, N, K, -1)
-    attacker_swarm = [TPM(L, N, K, -1)]  # 初始攻击者
-    return sender, receiver, attacker_swarm
+sigma_comb_num = 2**(K-1)
 
 def gen_sigma(K, tau):
-    # 根据 tau 生成 2^(K-1) 种 sigma 组合
-    sigma_combinations = []
+    # Generate 2^(K-1) sigma combinations based on tau
+    sigma_combinations = np.ones((2**(K-1), K), dtype=int)  # Initialize a matrix with all sigma values as 1
+
     for i in range(2**(K-1)):
-        sigma = [1] * K  # 默认所有 sigma 都是 1
-        bin_rep = bin(i)[2:].zfill(K-1)  # 二进制表示，生成 2^(K-1) 种组合
-        for j in range(K-1):
-            sigma[j] = -1 if bin_rep[j] == '1' else 1
-        # 根据 tau 设定最后一个 sigma，并确保转换为 int 类型
-        sigma[K-1] = int(tau * np.prod(sigma[:K-1]))  # 保证 sigma 的乘积等于 tau
-        sigma_combinations.append(sigma)
+        bin_rep = np.array(list(bin(i)[2:].zfill(K-1)), dtype=int)  # Generate combinations in binary representation
+        bin_rep = np.where(bin_rep == 1, -1, 1)  # Convert binary digits to 1 or -1
+        sigma_combinations[i, :K-1] = bin_rep  # First K-1 elements
+
+        # Set the last sigma based on tau to ensure the product of sigma equals tau
+        sigma_combinations[i, K-1] = int(tau * np.prod(sigma_combinations[i, :K-1]))
+
     return sigma_combinations
-# 预先生成 tau = 1 和 tau = -1 的 sigma 组合
+
+# Pre-generate sigma combinations for tau = 1 and tau = -1
 sigma_pos_tau = gen_sigma(K, 1)
 sigma_neg_tau = gen_sigma(K, -1)
 
 def attack_step(L, N, K, M, sync_target, rule):
-    sender, receiver, attacker_swarm = initialize_tpms(L, N, K)
+    sender = TPM(L, N, K, -1)
+    receiver = TPM(L, N, K, -1)
+
+    # Initialize the weights of the attacker swarm
+    attacker_swarm_W = np.random.choice(np.arange(-L, L + 1), size=(1, K, N))
+
     target = sender if sync_target == 'sender' else receiver
 
     steps, sync_steps, attack_sync_steps = 0, None, None
-    attack_success = False  # 记录攻击成功与否
+    attack_success = False  # Record whether the attack is successful
 
     while True:
-        steps += 1  # 记录步数
+        steps += 1  # Record the number of steps
 
-        # 生成随机输入向量
+        # Generate random input vectors
         X = np.random.choice([-1, 1], size=(sender.K, sender.N))
 
-        # 更新发送者和接收者的 tau，这个过程会重新计算 sigma
+        # Update tau for sender and receiver, which recalculates sigma
         sender.update_tau(X)
         receiver.update_tau(X)
 
-        # 攻击者群体的所有网络都应该重新计算 sigma
-        for attacker in attacker_swarm:
-            attacker.update_tau(X)  # 根据输入动态更新 tau 和 sigma
+        # All networks in the attacker swarm should recalculate sigma and tau
+        attacker_swarm_sigma = np.sign(
+            np.sum(np.multiply(attacker_swarm_W, X), axis=2, keepdims=True)
+        )
+        # Replace 0 in sigma with -1
+        attacker_swarm_sigma = np.where(attacker_swarm_sigma == 0, -1, attacker_swarm_sigma)
+        attacker_swarm_tau = np.prod(attacker_swarm_sigma, axis=1, keepdims=True)
 
-        # 同步攻击者和发送者或接收者
+        # Synchronize attackers with sender or receiver
         if sender.tau == receiver.tau:
-            # 发送者和接收者更新权重
+            # Update weights for sender and receiver
             sender.update_W(X, rule=rule)
             receiver.update_W(X, rule=rule)
-            # 生成攻击者变体，动态生成 sigma 组合，并生成新的攻击者
-            if len(attacker_swarm) < M:
-                sigma_combinations = sigma_pos_tau if target.tau == 1 else sigma_neg_tau
-                new_attackers = []
-                for attacker in attacker_swarm:
-                    for sigma in sigma_combinations:
-                        new_attacker = TPM(L, N, K, -1)
-                        new_attacker.W = np.copy(attacker.W)  # 复制权重
-                        new_attacker.update_W(X, rule=rule, tau_value=target.tau, sigma_value=sigma)
-                        new_attackers.append(new_attacker)
-                    # attacker.update_W(X, rule=rule, tau_value=target.tau)
-                attacker_swarm.clear()
-                attacker_swarm.extend(new_attackers)
-            # 如果攻击者数量超过 M，执行筛选操作
-            else:
-                # 过滤攻击者群，只保留 tau 等于发送者 tau 的攻击者
-                attacker_swarm = [attacker for attacker in attacker_swarm if attacker.tau == sender.tau]
-                # 更新保留下来的攻击者网络的权重
-                for attacker in attacker_swarm:
-                    # attacker.update_W(X, rule=rule, tau_value=target.tau)
-                    attacker.update_W(X, rule=rule)
 
-        # 检查攻击者是否同步
-        for attacker in attacker_swarm:
-            if attacker.is_sync(target, state='parallel'):
+            # Current number of attackers Q
+            Q = attacker_swarm_W.shape[0]
+
+            # If the number of attackers is less than M, expand attacker_swarm_W
+            if Q < M:
+                # Use np.repeat to repeat each K*N matrix sigma_comb_num times along the first dimension, generating (sigma_comb_num*Q, K, N)
+                attacker_swarm_W_extend = np.repeat(attacker_swarm_W, repeats=sigma_comb_num, axis=0)
+
+                # Each 4 attackers correspond to one sigma_combination
+                sigma_combinations = sigma_pos_tau if target.tau == 1 else sigma_neg_tau
+
+                # Update every 4 matrices in attacker_swarm_W_extend
+                for i in range(sigma_comb_num):
+                    for j in range(sigma_comb_num):
+                        idx = i * sigma_comb_num + j  # Group every sigma_comb_num
+                        # Find the sigma that matches sender.tau and update the corresponding row of W
+                        for row in range(K):
+                            if sigma_combinations[j][row] == sender.tau:
+                                # Update rule: only update rows that match sender.tau
+                                attacker_swarm_W_extend[idx, row, :] += sender.tau * X[row, :]
+
+                # After updating, replace the original attacker_swarm_W with the extended matrix
+                attacker_swarm_W = attacker_swarm_W_extend
+            
+            else:
+                # Filter attackers whose tau equals sender's tau
+                matching_indices = np.where(attacker_swarm_tau.flatten() == sender.tau)[0]
+                # Retain these matching attackers
+                attacker_swarm_W = attacker_swarm_W[matching_indices, :, :]
+                attacker_swarm_sigma = attacker_swarm_sigma[matching_indices, :, :]
+                attacker_swarm_tau = attacker_swarm_tau[matching_indices]
+                # Update the weights of the retained attackers
+                for idx in range(attacker_swarm_W.shape[0]):
+                    for row in range(K):
+                        # Update weights using each attacker's own tau and sigma
+                        if attacker_swarm_sigma[idx, row, :] == attacker_swarm_tau[idx]:
+                            attacker_swarm_W[idx, row, :] += attacker_swarm_tau[idx].item() * X[row, :]
+
+        # Limit the weight range to [-L, L]
+        attacker_swarm_W = np.clip(attacker_swarm_W, -L, L)
+
+        # Check if any attacker is synchronized
+        for idx in range(attacker_swarm_W.shape[0]):
+            # Compare each attacker's weight matrix with the sender's weight matrix
+            if np.array_equal(attacker_swarm_W[idx], sender.W):
                 attack_sync_steps = steps
                 attack_success = True
-                print(" success")
                 return attack_success, steps
 
-        # 检查发送者和接收者是否同步
+        # Check if sender and receiver are synchronized
         if sender.is_sync(receiver, state='parallel'):
             sync_steps = steps
-            print(" fail")
             break
 
-    return attack_success, sync_steps  # 返回攻击结果和同步的步数
+    return attack_success, sync_steps
 
 def run_simulation(L, N, K, M, sync_target, rule):
-    # 每个模拟任务运行的函数
     success, steps = attack_step(L, N, K, M, sync_target, rule)
     return success
 
 if __name__ == '__main__':
     success_count = 0
-    num_workers = os.cpu_count()  # Automatically select the number of workers based on CPU cores
 
-    # 使用 ProcessPoolExecutor 进行并行化
-    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+    # Use ProcessPoolExecutor for parallelization
+    with ProcessPoolExecutor() as executor:
         futures = [executor.submit(run_simulation, L, N, K, M, sync_target, rule) for _ in range(num_simulations)]
         
-        for future in tqdm(as_completed(futures), total=num_simulations, desc=f'Running M={M}, N={N}'):
-            if future.result():  # 如果返回的结果是成功
+        for future in tqdm(as_completed(futures), total=num_simulations, desc=f'M={M}, N={N}'):
+            if future.result():  # If the returned result is successful
                 success_count += 1
 
-    # 计算并输出攻击成功的概率
+    # Calculate and output the probability of a successful attack
     attack_success_probability = success_count / num_simulations
-    print(f'攻击成功的概率: {100 * attack_success_probability:.2f}%')
+    print(f'Probability of successful attack: {100 * attack_success_probability:.2f}%')
