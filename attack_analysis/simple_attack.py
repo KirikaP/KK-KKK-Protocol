@@ -9,35 +9,24 @@ from parity_machine import TreeParityMachine as TPM
 
 
 def initialize_tpms(L, N, K):
-    """
-    Initialize the Tree Parity Machines (TPMs) for the sender, receiver, and attacker
-
-    Args:
-        L (int): Range of weights
-        N (int): Number of input neurons per hidden neuron
-        K (int): Number of hidden neurons
-
-    Returns:
-        tuple: A tuple containing the sender, receiver, and attacker TPMs
-    """
     sender = TPM(L, N, K, -1)
     receiver = TPM(L, N, K, -1)
     attacker = TPM(L, N, K, -1)
     return sender, receiver, attacker
 
-def attack_step(L, N, K, sync_target, rule):
+def simple_attack(L, N, K, sync_target, rule):
     """
-    Perform a single attack step to synchronize the attacker with the target (sender or receiver)
+    Run a single attack simulation and return the ratio of sync_steps to attack_sync_steps.
 
     Args:
-        L (int): Range of weights
-        N (int): Number of input neurons per hidden neuron
-        K (int): Number of hidden neurons
-        sync_target (str): Target for synchronization ('sender' or 'receiver')
-        rule (str): Learning rule ('hebbian', 'anti_hebbian', or 'random_walk')
+        L (int): Weight range limit [-L, L].
+        N (int): Number of input bits per hidden unit.
+        K (int): Number of hidden units.
+        sync_target (str): Synchronization target ('sender' or 'receiver').
+        rule (str): Learning rule ('hebbian', 'anti_hebbian', 'random_walk').
 
     Returns:
-        float: The ratio of sync_steps to attack_sync_steps
+        float: The ratio of sync_steps to attack_sync_steps.
     """
     sender, receiver, attacker = initialize_tpms(L, N, K)
     target = sender if sync_target == 'sender' else receiver
@@ -54,7 +43,7 @@ def attack_step(L, N, K, sync_target, rule):
         attacker.update_tau(X)
 
         # Update weights if sender and receiver are synchronized
-        if sender.tau * receiver.tau > 0:
+        if sender.tau == receiver.tau:
             sender.update_W(X, rule=rule)
             receiver.update_W(X, rule=rule)
             attacker.update_W(X, rule=rule, tau_value=target.tau)
@@ -77,26 +66,11 @@ def attack_step(L, N, K, sync_target, rule):
     return sync_steps / attack_sync_steps if attack_sync_steps is not None else None
 
 def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
-    """
-    Perform multiple attack simulations to learn the synchronization ratio
-
-    Args:
-        L (int): Range of weights
-        N (int): Number of input neurons per hidden neuron
-        K (int): Number of hidden neurons
-        sync_target (str): Target for synchronization ('sender' or 'receiver')
-        rule (str): Learning rule ('hebbian', 'anti_hebbian', or 'random_walk')
-        num_simulations (int): Number of attack simulations
-        max_workers (int): Number of workers for parallel processing
-
-    Returns:
-        list: A list of synchronization ratios from the simulations
-    """
     ratios = []
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = [
-            executor.submit(attack_step, L, N, K, sync_target, rule)
+            executor.submit(simple_attack, L, N, K, sync_target, rule)  # executor.submit(function, *args)
             for _ in range(num_simulations)
         ]
 
@@ -108,13 +82,6 @@ def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
     return ratios
 
 def plot_results(ratios_dict, bin_width):
-    """
-    Plot the results of synchronization ratios for different N values
-
-    Args:
-        ratios_dict (dict): Dictionary of ratios for each N value
-        bin_width (float): Width of histogram bins
-    """
     for N, ratios in ratios_dict.items():
         truncated_ratios = [r for r in ratios if r < 1.0]
 
