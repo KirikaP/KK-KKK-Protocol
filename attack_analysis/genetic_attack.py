@@ -10,7 +10,7 @@ from parity_machine import TreeParityMachine as TPM
 # Parameter settings
 L = 3  # Weight range
 N = 100  # Input size
-K = 3  # Number of perceptrons
+K = 2  # Number of perceptrons
 M = 2500  # Maximum number of attackers
 rule = 'hebbian'  # Learning rule
 sync_target = 'sender'  # Target of the attack (sender or receiver)
@@ -19,9 +19,9 @@ sigma_comb_num = 2**(K-1)
 
 def gen_sigma(K, tau):
     # Generate 2^(K-1) sigma combinations based on tau
-    sigma_combinations = np.ones((2**(K-1), K), dtype=int)  # Initialize a matrix with all sigma values as 1
+    sigma_combinations = np.ones((sigma_comb_num, K), dtype=int)  # Initialize a matrix with all sigma values as 1
 
-    for i in range(2**(K-1)):
+    for i in range(sigma_comb_num):
         bin_rep = np.array(list(bin(i)[2:].zfill(K-1)), dtype=int)  # Generate combinations in binary representation
         bin_rep = np.where(bin_rep == 1, -1, 1)  # Convert binary digits to 1 or -1
         sigma_combinations[i, :K-1] = bin_rep  # First K-1 elements
@@ -82,8 +82,8 @@ def attack_step(L, N, K, M, sync_target, rule):
                 # Each 4 attackers correspond to one sigma_combination
                 sigma_combinations = sigma_pos_tau if target.tau == 1 else sigma_neg_tau
 
-                # Update every 4 matrices in attacker_swarm_W_extend
-                for i in range(sigma_comb_num):
+                # Update every sigma_comb_num matrices in attacker_swarm_W_extend
+                for i in range(Q):
                     for j in range(sigma_comb_num):
                         idx = i * sigma_comb_num + j  # Group every sigma_comb_num
                         # Find the sigma that matches sender.tau and update the corresponding row of W
