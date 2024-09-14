@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
+import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
@@ -31,11 +32,8 @@ def plot_sync_probs(simulation_results, L, K, num_intervals=20, smooth=True):
     markers = ['o', '^', 's', 'D']
 
     for (N, sync_steps), color, marker in zip(simulation_results.items(), colors, markers):
-        # Calculate probabilities
         scatter_probs = calculate_probs(sync_steps, num_intervals, smooth=False)
         smooth_probs = calculate_probs(sync_steps, num_intervals, smooth=smooth)
-
-        # Plot scatter points where probability >= 0.65
         filtered_scatter_probs = [(step, prob) for step, prob in scatter_probs if prob >= 0.65]
         if filtered_scatter_probs:
             plt.scatter(
@@ -43,22 +41,25 @@ def plot_sync_probs(simulation_results, L, K, num_intervals=20, smooth=True):
                 label=f'N = {N}', marker=marker, facecolors='none', edgecolors=color
             )
 
-        # Plot the smooth probability curve
         plt.plot(*zip(*smooth_probs), linestyle='--', color=color, alpha=0.6)
 
-        # Draw text at the step where probability reaches 1.0
         for step, prob in scatter_probs:
             if prob == 1.0:
                 plt.text(int(step), 1.02, f'{int(step)}', ha='center', va='bottom', color=color)
 
     plt.xlabel('Steps')
     plt.ylabel('Sync Probability')
-    plt.title(f'Sync Probability vs. Steps (L = {L}, K = {K})')
     y_ticks = np.linspace(0, 1, 11)
     plt.yticks(y_ticks)
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.3)
+    plt.savefig('./figures/transparent/t_sync_probability.png', transparent=True)
     plt.show()
+
+def save_results_to_csv(simulation_results, file_path):
+    df = pd.DataFrame(dict([(N, pd.Series(sync_steps)) for N, sync_steps in simulation_results.items()]))    
+    df.to_csv(file_path, index=False)
+    print(f"Data saved to {file_path}")
 
 
 if __name__ == "__main__":
@@ -69,3 +70,5 @@ if __name__ == "__main__":
     simulation_results = simulate(L, K, N_values, num_runs)
 
     plot_sync_probs(simulation_results, L, K)
+
+    save_results_to_csv(simulation_results, './result/sync_results.csv')

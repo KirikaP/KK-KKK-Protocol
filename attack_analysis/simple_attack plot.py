@@ -1,36 +1,55 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 def plot_simple_attack(csv_file, bin_width=0.01):
-    # 读取 CSV 文件
     data = pd.read_csv(csv_file)
     
-    # 按照 N 值进行分组
     N_values = sorted(data['N'].unique())
     
+    fig, ax = plt.subplots(figsize=(8, 6))
+
     for N in N_values:
         subset = data[data['N'] == N]
         truncated_ratios = subset[subset['Ratio'] < 1.0]['Ratio']
 
-        # 提取成功率
         success_rate = subset['Success Rate'].iloc[0]
 
-        # 绘制直方图，设置黑色边框
-        plt.hist(
+        ax.hist(
             truncated_ratios,
             bins=np.arange(0, 1 + 0.005, bin_width),
-            alpha=0.5, label=f'N = {N} ({success_rate:.2%})',
+            alpha=0.7, label=f'N = {N} ({success_rate:.2%})',
             edgecolor='black', histtype='stepfilled'
         )
 
-    plt.xlabel('Ratio(r) (sync_steps / attack_sync_steps)')
-    plt.ylabel('P(r)')
-    plt.title('Distribution between Ratio(r) and N Values')
-    plt.grid(True, linestyle='--', alpha=0.3)
-    plt.legend(title="N Values")
+    ax.set_xlabel('Ratio(r) (sync_steps / attack_sync_steps)')
+    ax.set_ylabel('P(r)')
+    ax.grid(True, linestyle='--', alpha=0.3)
+
+    ax_inset = inset_axes(ax, width="75%", height="15%", loc='right')
+
+    for N in N_values:
+        subset = data[data['N'] == N]
+        ratio_gt_1 = subset[subset['Ratio'] > 1.0]['Ratio']
+
+        if not ratio_gt_1.empty:
+            ax_inset.hist(
+                ratio_gt_1,
+                bins=np.arange(1, ratio_gt_1.max() + bin_width, bin_width),
+                alpha=0.7, edgecolor='black', histtype='stepfilled'
+            )
+
+    ax_inset.set_xlabel('Ratio > 1.0')
+    ax_inset.set_ylabel('P(r)')
+    ax_inset.grid(True, linestyle='--', alpha=0.3)
+
+    ax.legend(title="N Values", loc='best')
+
+    # plt.savefig(save_path, transparent=True)
+
     plt.show()
 
 if __name__ == "__main__":
-    csv_file = "simple_attack.csv"
+    csv_file = "./result/simple_attack.csv"
     plot_simple_attack(csv_file)

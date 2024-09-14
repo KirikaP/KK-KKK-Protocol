@@ -36,22 +36,18 @@ if __name__ == '__main__':
             for x in x_values:
                 all_weight_distributions[rule][x].append(weight_distribution[x])
 
-    # Calculate the average distribution for each rule and weight value
     avg_weight_distributions = {rule: [np.mean(all_weight_distributions[rule][x]) for x in x_values] for rule in learning_rules}
 
-    # Calculate the uniform distribution for random state (same for all x)
     uniform_distribution = [1 / (2 * L + 1)] * len(x_values)
 
-    # Plot weight distribution for each learning rule
     for rule in learning_rules:
         plt.plot(x_values, avg_weight_distributions[rule], marker='o', linestyle='-', label=f'{rule}')
 
     # Plot the uniform distribution (horizontal line)
     plt.plot(x_values, uniform_distribution, linestyle='--', color='black', label='Random State', alpha=0.5)
-
     plt.xlabel('Weight values')
     plt.ylabel('Proportion')
-    plt.title('Proportion of Weights for Different Learning Rules')
     plt.legend()
     plt.grid(True)
+    plt.savefig('./figures/transparent/weight_distribution.png')
     plt.show()

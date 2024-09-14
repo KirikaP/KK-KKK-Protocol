@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 import os
+import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
@@ -14,7 +15,6 @@ def run_experiments(N_values, B_values, num_runs=5000):
         average_steps = []
 
         for B in B_values:
-            # Call train_TPMs with B=None for normal sync or a specific value of B for bit package sync
             results = train_TPMs(
                 L, K, N,
                 zero_replace_1=1,
@@ -22,7 +22,7 @@ def run_experiments(N_values, B_values, num_runs=5000):
                 num_runs=num_runs,
                 rule='anti_hebbian',
                 state='anti_parallel',
-                B=B  # Use bit package sync if B is provided, else regular sync
+                B=B
             )
             avg_steps = np.mean(results)
             average_steps.append(avg_steps)
@@ -31,6 +31,14 @@ def run_experiments(N_values, B_values, num_runs=5000):
         all_results[N] = average_steps
 
     return B_values, all_results
+
+
+def save_results_to_csv(B_values, all_results, file_path):
+    df = pd.DataFrame(all_results, index=B_values)
+    df.index.name = "Bit Package Size (B)"    
+    df.to_csv(file_path)
+    print(f"Data saved to {file_path}")
+
 
 if __name__ == "__main__":
     B_values = [1, 2, 4, 8, 16, 32, 64, 128]
@@ -61,14 +69,14 @@ if __name__ == "__main__":
         )
 
     plt.xscale('log', base=2)
-    plt.title("Synchronization Steps vs. Bit Package Size (B) for Different N")
     plt.xlabel("Bit Package Size (B) [Log Base 2]")
     plt.ylabel("Average Synchronization Steps")
-
     plt.ylim(y_min_data, y_max_data)
     plt.yticks(y_ticks)
-
     plt.grid(True, linestyle='--', alpha=0.3)
-    plt.legend()
-    plt.tight_layout()
+    plt.legend(loc='upper center')
+    plt.tight_layout()    
+    plt.savefig("./figures/transparent/t_sync_bit_package.png", transparent=True)
     plt.show()
+
+    save_results_to_csv(B_values, all_results, "./result/bit_package.csv")

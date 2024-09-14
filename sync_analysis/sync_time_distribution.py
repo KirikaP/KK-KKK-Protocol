@@ -37,10 +37,10 @@ def plot_results(N_values, N_step_counts, L, K, bin_width=30, colors=None):
 
     plt.xlabel('t_sync')
     plt.ylabel('P(t_sync)')
-    plt.title(f'Distribution of t_sync, L = {L}, K = {K}')
     plt.legend(loc='upper right')
     plt.xlim(0, 3000)
     plt.grid(True)
+    plt.savefig('./figures/transparent/t_sync_distribution.png', transparent=True)
     plt.show()
 
 
