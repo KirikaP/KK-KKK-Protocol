@@ -1,41 +1,39 @@
 import numpy as np
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
+from tqdm import tqdm
+from itertools import product
+import csv
 
-# Parameter settings
-L = 3  # Weight range
-N = 100  # Input size
-K = 2  # Number of perceptrons
-M = 2500  # Maximum number of attackers
-rule = 'hebbian'  # Learning rule
-sync_target = 'sender'  # Target of the attack (sender or receiver)
-num_simulations = 1000
-sigma_comb_num = 2**(K-1)
+# Parameters
+K_values = [3]         # Number of units
+N_values = [100]   # Input size
+L_values = [1, 2, 3, 4, 5]   # Weight range
+M_values = [2500]  # Number of attackers
+rule = 'hebbian'             # Learning rule
+sync_target = 'sender'       # Target of the attack (sender or receiver)
+num_simulations = 2000       # Number of simulations per parameter combination
 
 def gen_sigma(K, tau):
-    # Generate 2^(K-1) sigma combinations based on tau
-    sigma_combinations = np.ones((sigma_comb_num, K), dtype=int)  # Initialize a matrix with all sigma values as 1
+    num_sigma_comb = 2 ** (K - 1)
+    sigma_combinations = np.ones((num_sigma_comb, K), dtype=int)  # Initialize with all ones
 
-    for i in range(sigma_comb_num):
-        bin_rep = np.array(list(bin(i)[2:].zfill(K-1)), dtype=int)  # Generate combinations in binary representation
-        bin_rep = np.where(bin_rep == 1, -1, 1)  # Convert binary digits to 1 or -1
-        sigma_combinations[i, :K-1] = bin_rep  # First K-1 elements
-
-        # Set the last sigma based on tau to ensure the product of sigma equals tau
-        sigma_combinations[i, K-1] = int(tau * np.prod(sigma_combinations[i, :K-1]))
+    for i in range(num_sigma_comb):
+        bin_rep = np.array(list(bin(i)[2:].zfill(K - 1)), dtype=int)
+        bin_rep = np.where(bin_rep == 1, -1, 1)
+        sigma_combinations[i, :K - 1] = bin_rep
+        sigma_combinations[i, K - 1] = int(tau * np.prod(sigma_combinations[i, :K - 1]))
 
     return sigma_combinations
 
-# Pre-generate sigma combinations for tau = 1 and tau = -1
-sigma_pos_tau = gen_sigma(K, 1)
-sigma_neg_tau = gen_sigma(K, -1)
+def genetic_attack(L, N, K, M, sync_target, rule):
+    num_sigma_comb = 2 ** (K - 1)
+    sigma_pos_tau = gen_sigma(K, 1)
+    sigma_neg_tau = gen_sigma(K, -1)
 
-def attack_step(L, N, K, M, sync_target, rule):
     sender = TPM(L, N, K, -1)
     receiver = TPM(L, N, K, -1)
 
@@ -44,104 +42,113 @@ def attack_step(L, N, K, M, sync_target, rule):
 
     target = sender if sync_target == 'sender' else receiver
 
-    steps, sync_steps, attack_sync_steps = 0, None, None
-    attack_success = False  # Record whether the attack is successful
+    steps = 0
+    attack_success = False
 
     while True:
-        steps += 1  # Record the number of steps
+        steps += 1
 
         # Generate random input vectors
-        X = np.random.choice([-1, 1], size=(sender.K, sender.N))
+        X = np.random.choice([-1, 1], size=(K, N))
 
-        # Update tau for sender and receiver, which recalculates sigma
+        # Update tau for sender and receiver
         sender.update_tau(X)
         receiver.update_tau(X)
 
-        # All networks in the attacker swarm should recalculate sigma and tau
-        attacker_swarm_sigma = np.sign(
-            np.sum(np.multiply(attacker_swarm_W, X), axis=2, keepdims=True)
-        )
-        # Replace 0 in sigma with -1
+        # Attacker swarm updates
+        attacker_swarm_sigma = np.sign(np.sum(attacker_swarm_W * X, axis=2, keepdims=True))
         attacker_swarm_sigma = np.where(attacker_swarm_sigma == 0, -1, attacker_swarm_sigma)
         attacker_swarm_tau = np.prod(attacker_swarm_sigma, axis=1, keepdims=True)
 
-        # Synchronize attackers with sender or receiver
         if sender.tau == receiver.tau:
             # Update weights for sender and receiver
             sender.update_W(X, rule=rule)
             receiver.update_W(X, rule=rule)
 
-            # Current number of attackers Q
             Q = attacker_swarm_W.shape[0]
 
-            # If the number of attackers is less than M, expand attacker_swarm_W
             if Q < M:
-                # Use np.repeat to repeat each K*N matrix sigma_comb_num times along the first dimension, generating (sigma_comb_num*Q, K, N)
-                attacker_swarm_W_extend = np.repeat(attacker_swarm_W, repeats=sigma_comb_num, axis=0)
-
-                # Each 4 attackers correspond to one sigma_combination
+                attacker_swarm_W_variants = np.repeat(attacker_swarm_W, repeats=num_sigma_comb, axis=0)
                 sigma_combinations = sigma_pos_tau if target.tau == 1 else sigma_neg_tau
 
-                # Update every sigma_comb_num matrices in attacker_swarm_W_extend
                 for i in range(Q):
-                    for j in range(sigma_comb_num):
-                        idx = i * sigma_comb_num + j  # Group every sigma_comb_num
-                        # Find the sigma that matches sender.tau and update the corresponding row of W
+                    for j in range(num_sigma_comb):
+                        idx = i * num_sigma_comb + j
                         for row in range(K):
                             if sigma_combinations[j][row] == sender.tau:
-                                # Update rule: only update rows that match sender.tau
-                                attacker_swarm_W_extend[idx, row, :] += sender.tau * X[row, :]
-
-                # After updating, replace the original attacker_swarm_W with the extended matrix
-                attacker_swarm_W = attacker_swarm_W_extend
-            
+                                attacker_swarm_W_variants[idx, row, :] += sender.tau * X[row, :]
+                attacker_swarm_W = attacker_swarm_W_variants
             else:
-                # Filter attackers whose tau equals sender's tau
                 matching_indices = np.where(attacker_swarm_tau.flatten() == sender.tau)[0]
-                # Retain these matching attackers
-                attacker_swarm_W = attacker_swarm_W[matching_indices, :, :]
-                attacker_swarm_sigma = attacker_swarm_sigma[matching_indices, :, :]
+                attacker_swarm_W = attacker_swarm_W[matching_indices]
+                attacker_swarm_sigma = attacker_swarm_sigma[matching_indices]
                 attacker_swarm_tau = attacker_swarm_tau[matching_indices]
-                # Update the weights of the retained attackers
+
                 for idx in range(attacker_swarm_W.shape[0]):
                     for row in range(K):
-                        # Update weights using each attacker's own tau and sigma
                         if attacker_swarm_sigma[idx, row, :] == attacker_swarm_tau[idx]:
                             attacker_swarm_W[idx, row, :] += attacker_swarm_tau[idx].item() * X[row, :]
 
-        # Limit the weight range to [-L, L]
         attacker_swarm_W = np.clip(attacker_swarm_W, -L, L)
 
-        # Check if any attacker is synchronized
+        # Check for successful attack
         for idx in range(attacker_swarm_W.shape[0]):
-            # Compare each attacker's weight matrix with the sender's weight matrix
             if np.array_equal(attacker_swarm_W[idx], sender.W):
-                attack_sync_steps = steps
                 attack_success = True
                 return attack_success, steps
 
         # Check if sender and receiver are synchronized
         if sender.is_sync(receiver, state='parallel'):
-            sync_steps = steps
             break
 
-    return attack_success, sync_steps
+    return attack_success, steps
 
-def run_simulation(L, N, K, M, sync_target, rule):
-    success, steps = attack_step(L, N, K, M, sync_target, rule)
-    return success
-
-if __name__ == '__main__':
+def run_simulation(L, N, K, M, sync_target, rule, num_simulations):
     success_count = 0
 
-    # Use ProcessPoolExecutor for parallelization
     with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_simulation, L, N, K, M, sync_target, rule) for _ in range(num_simulations)]
-        
-        for future in tqdm(as_completed(futures), total=num_simulations, desc=f'M={M}, N={N}'):
-            if future.result():  # If the returned result is successful
-                success_count += 1
+        futures = [
+            executor.submit(genetic_attack, L, N, K, M, sync_target, rule) for _ in range(num_simulations)
+        ]
 
-    # Calculate and output the probability of a successful attack
-    attack_success_probability = success_count / num_simulations
-    print(f'Probability of successful attack: {100 * attack_success_probability:.2f}%')
+        # Initialize tqdm progress bar
+        with tqdm(total=num_simulations, desc=f'K={K}, N={N}, L={L}, M={M}', leave=False) as pbar:
+            for future in as_completed(futures):
+                attack_success, _ = future.result()
+                if attack_success:
+                    success_count += 1
+                pbar.update(1)  # Update progress bar
+
+    return success_count
+
+
+if __name__ == '__main__':
+    # Open the CSV file to write the results
+    with open('genetic_attack.csv', 'w', newline='') as csvfile:
+        # Define the CSV writer
+        csv_writer = csv.writer(csvfile)
+        # Write the header
+        csv_writer.writerow(['K', 'N', 'L', 'M', 'Success Rate (%)'])
+
+        # Total number of parameter combinations
+        total_combinations = len(K_values) * len(N_values) * len(L_values) * len(M_values)
+
+        # Initialize overall progress bar
+        with tqdm(total=total_combinations, desc='Total Progress') as total_pbar:
+            # Loop over all parameter combinations
+            for K, N, L, M in product(K_values, N_values, L_values, M_values):
+                # Print message moved inside tqdm description
+                # Run simulations with progress bar
+                success_count = run_simulation(L, N, K, M, sync_target, rule, num_simulations)
+
+                # Calculate success rate
+                success_rate = (success_count / num_simulations) * 100
+
+                # Write the results to the CSV file
+                csv_writer.writerow([K, N, L, M, f'{success_rate:.2f}'])
+
+                # Flush the file to ensure data is written
+                csvfile.flush()
+
+                # Update overall progress bar
+                total_pbar.update(1)
