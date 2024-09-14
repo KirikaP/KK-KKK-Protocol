@@ -29,16 +29,24 @@ class TreeParityMachine:
         self.zero_replace = zero_replace
         self.sigma = None
         self.tau = None
+        self.h = None  # Initialize h (local field)
 
     def update_tau(self, X):
         """
-        Update tau based on the input vector X and current weights.
+        Update tau based on the input vector X and current weights, 
+        and compute the local fields (h) for each hidden unit.
 
         Args:
             X (np.ndarray): Input vector of shape (K, N).
         """
-        self.sigma = np.sign(np.sum(np.multiply(self.W, X), axis=1))
+        # Compute the local field h for each hidden unit
+        self.h = np.sum(np.multiply(self.W, X), axis=1)
+
+        # Compute sigma based on the sign of h
+        self.sigma = np.sign(self.h)
         self.sigma = np.where(self.sigma == 0, self.zero_replace, self.sigma)
+
+        # Compute the output tau as the product of sigma
         self.tau = np.prod(self.sigma)
 
     def update_W(self, X, rule='anti_hebbian', tau_value=None, sigma_value=None):
