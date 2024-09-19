@@ -10,12 +10,12 @@ from parity_machine import TreeParityMachine as TPM
 # Hyperparameters
 L = 3  # Weight range [-L, L]
 K = 3  # Number of hidden units
-rule = 'hebbian'  # Learning rule
+N = 10  # Number of input bits per hidden unit
 sync_target = 'sender'  # Synchronization target
+learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
 num_simulations = 2000  # Number of attack simulations
 max_workers = 16  # Number of workers for parallel processing
-N_values = [100, 50, 20, 10]  # Different values of N for the simulation
-output_file = "simple_attack.csv"  # Output file for results
+output_file = "simple_attack_various_rules.csv"  # Output file for results
 
 def initialize_tpms(L, N, K):
     sender = TPM(L, N, K, -1)
@@ -72,15 +72,14 @@ def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
 if __name__ == "__main__":
     results = []
 
-    for N in N_values:
-        print(f"Running N = {N}...")
+    for rule in learning_rules:
+        print(f"Running {rule} learning rule with N = {N}...")
         ratios = attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers)
 
-        success_rate = sum(1 for r in ratios if r >= 1.0) / len(ratios)  # Calculate success rate
+        success_rate = sum(1 for r in ratios if r >= 1.0) / len(ratios)
         for ratio in ratios:
-            results.append([L, N, K, ratio, success_rate])
+            results.append([L, N, K, rule, ratio, success_rate])
 
-    # Save to CSV file
-    df = pd.DataFrame(results, columns=["L", "N", "K", "Ratio", "Success Rate"])
+    df = pd.DataFrame(results, columns=["L", "N", "K", "Rule", "Ratio", "Success Rate"])
     df.to_csv(output_file, index=False)
     print(f"Results saved to {output_file}")

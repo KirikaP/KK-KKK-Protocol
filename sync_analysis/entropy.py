@@ -59,6 +59,7 @@ if __name__ == '__main__':
     plt.xlabel('L')
     plt.ylabel('Average Entropy')
     plt.legend()
+    plt.tight_layout()
     plt.grid(True)
     plt.savefig('./figures/transparent/weight_entropy.png', transparent=True)
     plt.show()

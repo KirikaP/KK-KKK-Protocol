@@ -6,48 +6,82 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
+# Hyperparameters
+L = 3  # Weight range [-L, L]
+K = 3  # Number of hidden units
+N_values = [10, 100, 1000, 10000]  # Different values of N for the simulation
+num_runs = 3000  # Number of simulations to run
+zero_replace_1 = -1  # Parameter for TPM initialization
+zero_replace_2 = -1  # Parameter for TPM initialization
+learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
+state = 'parallel'  # Synchronization state
+output_file = './result/avg_sync_time.csv'  # CSV file to save results
+figure_file = './figures/transparent/t_sync_with_N.png'  # File to save the figure
 
 def simulate(
-    L, K, N_values, num_runs=5000, zero_replace_1=1, zero_replace_2=-1,
-    rule='anti_hebbian', state='anti_parallel'
+    L, K, N_values, num_runs=5000, zero_replace_1=-1, zero_replace_2=-1,
+    rule='anti_hebbian', state='parallel'
 ):
     results = []
     for N in N_values:
-        print(f"Running N = {N}")
+        print(f"Running N = {N} for {rule}")
         sync_steps = train_TPMs(L, K, N, zero_replace_1, zero_replace_2, num_runs, rule, state)
         mean_steps = np.mean(sync_steps)
         results.append(mean_steps)
 
     return results
 
-def plot_results(N_values, avg_sync_times, L, K):
-    for N, y in zip(N_values, avg_sync_times):
-        x = 1 / N
-        plt.scatter(x, y, color='black', marker='o')
+def plot_results(N_values, results_dict):
+    plt.figure()
 
-    y_max = max(avg_sync_times)
+    # Define markers for different rules
+    markers = {
+        'hebbian': 'o',          # Hollow circle
+        'anti_hebbian': 's',     # Hollow square
+        'random_walk': '^'       # Hollow triangle
+    }
+
+    # Plot the results for each rule with hollow markers
+    for rule, avg_sync_times in results_dict.items():
+        for N, y in zip(N_values, avg_sync_times):
+            x = np.log10(N)  # Log scale on the x-axis
+            plt.scatter(x, y, edgecolor='black', facecolor='none', marker=markers[rule], label=rule if N == N_values[0] else "")
+
+    y_max = max([max(values) for values in results_dict.values()])
     plt.ylim([0, y_max + 0.1 * y_max])
-    plt.xlim([1 / max(N_values) - 0.01, 1 / min(N_values) + 0.01])
-    plt.xlabel('1/N')
+
+    # Logarithmic labels for x-axis
+    plt.xlabel(r'$\log_{10}{N}$')
     plt.ylabel('Average Synchronization Steps')
     plt.grid(True, alpha=0.5, linestyle='--')
-    plt.savefig('./figures/transparent/t_sync_with_N.png', transparent=True)
+
+    # Add a legend to differentiate learning rules
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(figure_file, transparent=True)
     plt.show()
 
-def save_results_to_csv(N_values, avg_sync_times, file_path):
+def save_results_to_csv(N_values, results_dict, file_path):
     df = pd.DataFrame({
         'N': N_values,
-        'Average Synchronization Steps': avg_sync_times
+        'Hebbian': results_dict['hebbian'],
+        'Anti-Hebbian': results_dict['anti_hebbian'],
+        'Random Walk': results_dict['random_walk']
     })
     df.to_csv(file_path, index=False)
     print(f"Results saved to {file_path}")
 
-
 if __name__ == "__main__":
-    L, K, N_values = 3, 3, [1000, 100, 50, 20, 10]
-    num_runs = 5000
+    # Dictionary to store the results for each learning rule
+    results_dict = {}
 
-    avg_sync_times = simulate(L, K, N_values, num_runs)
+    # Simulate for each learning rule
+    for rule in learning_rules:
+        avg_sync_times = simulate(L, K, N_values, num_runs, zero_replace_1, zero_replace_2, rule, state)
+        results_dict[rule] = avg_sync_times
 
-    plot_results(N_values, avg_sync_times, L, K)
-    save_results_to_csv(N_values, avg_sync_times, './results/avg_sync_time.csv')
+    # Plot the results with log10 scaling on x-axis and hollow markers
+    plot_results(N_values, results_dict)
+
+    # Save the results to a CSV file
+    save_results_to_csv(N_values, results_dict, output_file)

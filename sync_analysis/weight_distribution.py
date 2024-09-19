@@ -48,6 +48,7 @@ if __name__ == '__main__':
     plt.xlabel('Weight values')
     plt.ylabel('Proportion')
     plt.legend()
+    plt.tight_layout()
     plt.grid(True)
-    plt.savefig('./figures/transparent/weight_distribution.png')
+    plt.savefig('./figures/transparent/weight_distribution.png', transparent=True)
     plt.show()

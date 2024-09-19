@@ -7,8 +7,8 @@ from train import train_TPMs
 
 
 def simulate(
-    L, K, N_values, num_runs=5000, max_t_sync=3000, zero_replace_1=1, zero_replace_2=-1,
-    rule='anti_hebbian', state='anti_parallel'
+    L, K, N_values, num_runs=5000, max_t_sync=3000, zero_replace_1=-1, zero_replace_2=-1,
+    rule='random_walk', state='parallel'
 ):
     N_step_counts = []
     for N in N_values:
@@ -35,12 +35,13 @@ def plot_results(N_values, N_step_counts, L, K, bin_width=30, colors=None):
             alpha=0.5 if N in [10, 100] else 1
         )
 
-    plt.xlabel('t_sync')
-    plt.ylabel('P(t_sync)')
+    plt.xlabel('Steps')
+    plt.ylabel('Frequency')
     plt.legend(loc='upper right')
     plt.xlim(0, 3000)
-    plt.grid(True)
-    plt.savefig('./figures/transparent/t_sync_distribution.png', transparent=True)
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.savefig('./figures/transparent/t_sync_distribution_rw.png', transparent=True)
     plt.show()
 
 

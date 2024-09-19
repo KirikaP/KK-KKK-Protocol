@@ -11,7 +11,7 @@ import csv
 # Parameters
 K_values = [3]         # Number of units
 N_values = [100]   # Input size
-L_values = [1, 2, 3, 4, 5]   # Weight range
+L_values = [3]   # Weight range
 M_values = [2500]  # Number of attackers
 rule = 'hebbian'             # Learning rule
 sync_target = 'sender'       # Target of the attack (sender or receiver)
@@ -67,17 +67,19 @@ def genetic_attack(L, N, K, M, sync_target, rule):
 
             Q = attacker_swarm_W.shape[0]
 
-            if Q < M:
+            if Q <= M:
                 attacker_swarm_W_variants = np.repeat(attacker_swarm_W, repeats=num_sigma_comb, axis=0)
                 sigma_combinations = sigma_pos_tau if target.tau == 1 else sigma_neg_tau
 
                 for i in range(Q):
+
                     for j in range(num_sigma_comb):
                         idx = i * num_sigma_comb + j
                         for row in range(K):
                             if sigma_combinations[j][row] == sender.tau:
                                 attacker_swarm_W_variants[idx, row, :] += sender.tau * X[row, :]
                 attacker_swarm_W = attacker_swarm_W_variants
+                # attacker_swarm_W = np.concatenate((attacker_swarm_W, attacker_swarm_W_variants), axis=0)
             else:
                 matching_indices = np.where(attacker_swarm_tau.flatten() == sender.tau)[0]
                 attacker_swarm_W = attacker_swarm_W[matching_indices]

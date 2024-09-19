@@ -41,11 +41,9 @@ class TreeParityMachine:
         """
         # Compute the local field h for each hidden unit
         self.h = np.sum(np.multiply(self.W, X), axis=1)
-
         # Compute sigma based on the sign of h
         self.sigma = np.sign(self.h)
         self.sigma = np.where(self.sigma == 0, self.zero_replace, self.sigma)
-
         # Compute the output tau as the product of sigma
         self.tau = np.prod(self.sigma)
 
