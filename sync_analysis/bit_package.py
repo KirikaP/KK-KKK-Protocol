@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
-# Hyperparameters
+# parameters
 L = 3  # Weight range [-L, L]
 K = 3  # Number of hidden units
 B_values = [1, 2, 4, 8, 16, 32, 64, 128]  # Different bit package sizes

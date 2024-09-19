@@ -7,6 +7,17 @@ import pandas as pd  # Import pandas to save data as CSV
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
+# parameters
+K = 3  # Number of hidden units
+N = 100  # Number of input bits per hidden unit
+zero_replace_1 = -1  # Parameter for TPM initialization
+zero_replace_2 = -1  # Parameter for TPM initialization
+num_runs = 2000  # Number of simulations to run
+state = 'parallel'  # Synchronization state
+learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
+L_values = range(4, 7)  # Weight range values [-L, L]
+output_file = './result/entropy.csv'  # CSV file to save results
+figure_file = './figures/transparent/weight_entropy.png'  # File to save the figure
 
 def calculate_weight_entropy(W):
     unique, counts = np.unique(W, return_counts=True)
@@ -28,14 +39,7 @@ def save_entropy_to_csv(L_values, all_avg_entropy, uniform_entropies, file_path)
     df.to_csv(file_path, index=False)
     print(f"Data saved to {file_path}")
 
-
 if __name__ == '__main__':
-    K, N = 3, 100
-    zero_replace_1, zero_replace_2 = -1, -1
-    num_runs = 2000
-    state = 'parallel'
-    learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']
-    L_values = range(4, 7)
     all_avg_entropy = {rule: [] for rule in learning_rules}
 
     for rule in learning_rules:
@@ -61,7 +65,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig('./figures/transparent/weight_entropy.png', transparent=True)
+    plt.savefig(figure_file, transparent=True)
     plt.show()
 
-    save_entropy_to_csv(L_values, all_avg_entropy, uniform_entropies, './result/entropy.csv')
+    save_entropy_to_csv(L_values, all_avg_entropy, uniform_entropies, output_file)

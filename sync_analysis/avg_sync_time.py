@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
-# Hyperparameters
+# parameters
 L = 3  # Weight range [-L, L]
 K = 3  # Number of hidden units
 N_values = [10, 100, 1000, 10000]  # Different values of N for the simulation

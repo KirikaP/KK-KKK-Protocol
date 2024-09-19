@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
 
-# Hyperparameters
+# parameters
 L = 3  # Weight range [-L, L]
 K = 3  # Number of hidden units
 N = 10  # Number of input bits per hidden unit

@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
-# Hyperparameters
+# parameters
 K = 3  # Number of hidden units
 N = 100  # Number of input bits per hidden unit
 zero_replace_1 = -1  # Parameter for TPM initialization
