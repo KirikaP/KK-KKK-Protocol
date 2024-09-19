@@ -5,26 +5,28 @@ import os
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
+# Hyperparameters
+L = 5  # Weight range [-L, L]
+K = 3  # Number of hidden units
+N = 100  # Number of input bits per hidden unit
+zero_replace_1 = -1  # Parameter for TPM initialization
+zero_replace_2 = -1  # Parameter for TPM initialization
+num_runs = 5000  # Number of simulations to run
+state = 'parallel'  # Synchronization state
+learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
+figure_file = './figures/transparent/weight_distribution.png'  # File to save the figure
 
 def calculate_weight_distribution(W, L):
     unique, counts = np.unique(W, return_counts=True)
     total_weights = W.size
-    weight_distribution = {i: 0 for i in range(-L, L+1)}
+    weight_distribution = {i: 0 for i in range(-L, L + 1)}
     for u, c in zip(unique, counts):
         if u in weight_distribution:
             weight_distribution[u] = c / total_weights
     return weight_distribution
 
-
 if __name__ == '__main__':
-    L, K, N = 5, 3, 100
-    zero_replace_1, zero_replace_2 = -1, -1
-    num_runs = 5000
-    state = 'parallel'
-    learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']
-    
-    x_values = list(range(-L, L + 1))  # x axis for weights in range [-L, L]
-    
+    x_values = list(range(-L, L + 1))  # x-axis for weights in range [-L, L]
     all_weight_distributions = {rule: {x: [] for x in x_values} for rule in learning_rules}
 
     for rule in learning_rules:
@@ -37,7 +39,6 @@ if __name__ == '__main__':
                 all_weight_distributions[rule][x].append(weight_distribution[x])
 
     avg_weight_distributions = {rule: [np.mean(all_weight_distributions[rule][x]) for x in x_values] for rule in learning_rules}
-
     uniform_distribution = [1 / (2 * L + 1)] * len(x_values)
 
     for rule in learning_rules:
@@ -50,5 +51,5 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig('./figures/transparent/weight_distribution.png', transparent=True)
+    plt.savefig(figure_file, transparent=True)
     plt.show()

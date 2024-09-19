@@ -6,6 +6,18 @@ import pandas as pd
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from train import train_TPMs
 
+# parameters
+L = 3  # Weight range [-L, L]
+K = 3  # Number of hidden units
+N = 10  # Number of input bits per hidden unit
+num_runs = 5000  # Number of simulations to run
+zero_replace_1 = -1  # Parameter for TPM initialization
+zero_replace_2 = -1  # Parameter for TPM initialization
+state = 'parallel'  # Synchronization state
+rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
+output_file = './result/sync_results_N100.csv'  # CSV file to save results
+figure_file = './figures/transparent/t_sync_probability.png'  # File to save the figure
+
 def simulate(
     L, K, N, rule, num_runs=5000, zero_replace_1=-1, zero_replace_2=-1, state='parallel'
 ):
@@ -51,7 +63,7 @@ def plot_sync_probs(simulation_results, L, K, num_intervals=20, smooth=True):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
-    plt.savefig('./figures/transparent/t_sync_probability.png', transparent=True)
+    plt.savefig(figure_file, transparent=True)
     plt.show()
 
 def save_results_to_csv(simulation_results, file_path):
@@ -59,18 +71,14 @@ def save_results_to_csv(simulation_results, file_path):
     df.to_csv(file_path, index=False)
     print(f"Data saved to {file_path}")
 
-
 if __name__ == "__main__":
-    L, K = 3, 3
-    N = 10
-    num_runs = 5000
-    rules = ['hebbian', 'anti_hebbian', 'random_walk']
-
     simulation_results = {}
 
     for rule in rules:
         simulation_results[rule] = simulate(L, K, N, rule, num_runs)
 
+    # Plot synchronization probabilities
     plot_sync_probs(simulation_results, L, K)
 
-    save_results_to_csv(simulation_results, './result/sync_results_N100.csv')
+    # Save the results to a CSV file
+    save_results_to_csv(simulation_results, output_file)

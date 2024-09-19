@@ -8,10 +8,20 @@ from tqdm import tqdm
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scripts'))
 from parity_machine import TreeParityMachine as TPM
 
+# parameters
+L = 3  # Weight range [-L, L]
+K = 3  # Number of hidden units
+N = 100  # Number of input bits per hidden unit
+num_runs = 5000  # Number of simulations to run
+zero_replace_1 = -1  # Parameter for TPM initialization
+zero_replace_2 = -1  # Parameter for TPM initialization
+learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']  # Different learning rules
+state = 'parallel'  # Synchronization state
+max_workers = 16  # Maximum number of workers for parallel processing
+output_file = './figures/hamming_distance_line_plot_parallel.png'  # File to save the figure
 
 def calculate_hamming_distance(weights1, weights2):
     return np.sum(weights1 != weights2)
-
 
 def run_single_simulation(L, K, N, zero_replace_1, zero_replace_2, rule, state):
     tpm1 = TPM(L, N, K, zero_replace_1)
@@ -35,7 +45,6 @@ def run_single_simulation(L, K, N, zero_replace_1, zero_replace_2, rule, state):
                 break
 
     return hamming_distances
-
 
 def run_experiment(L, K, N, num_runs, rules, zero_replace_1=-1, zero_replace_2=-1, state='parallel', max_workers=None):
     avg_hamming_distances = {rule: [] for rule in rules}
@@ -66,14 +75,8 @@ def run_experiment(L, K, N, num_runs, rules, zero_replace_1=-1, zero_replace_2=-
 
     return avg_hamming_distances
 
-
 if __name__ == '__main__':
-    L, K, N = 3, 3, 100
-    num_runs = 5000
-    learning_rules = ['hebbian', 'anti_hebbian', 'random_walk']
-    state = 'parallel'
-
-    avg_hamming_distances = run_experiment(L, K, N, num_runs, learning_rules, state=state, max_workers=4)
+    avg_hamming_distances = run_experiment(L, K, N, num_runs, learning_rules, state=state, max_workers=max_workers)
 
     for rule in learning_rules:
         plt.plot(avg_hamming_distances[rule], label=f'{rule}')
@@ -85,5 +88,5 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
-    plt.savefig('./figures/hamming_distance_line_plot_parallel.png', transparent=True)
+    plt.savefig(output_file, transparent=True)
     plt.show()
