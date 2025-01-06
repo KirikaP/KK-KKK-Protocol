@@ -88,5 +88,9 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     plt.savefig(output_file, transparent=True)
     plt.show()

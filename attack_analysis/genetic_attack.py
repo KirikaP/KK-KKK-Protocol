@@ -16,6 +16,7 @@ M_values = [2500]  # Number of attackers
 rule = 'hebbian'             # Learning rule
 sync_target = 'sender'       # Target of the attack (sender or receiver)
 num_simulations = 2000       # Number of simulations per parameter combination
+output_file = './result/genetic_attack.csv'  # Output file for results
 
 def gen_sigma(K, tau):
     num_sigma_comb = 2 ** (K - 1)
@@ -125,8 +126,11 @@ def run_simulation(L, N, K, M, sync_target, rule, num_simulations):
 
 
 if __name__ == '__main__':
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     # Open the CSV file to write the results
-    with open('genetic_attack.csv', 'w', newline='') as csvfile:
+    with open(output_file, 'w', newline='') as csvfile:
         # Define the CSV writer
         csv_writer = csv.writer(csvfile)
         # Write the header

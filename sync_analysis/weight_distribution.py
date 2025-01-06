@@ -44,12 +44,16 @@ if __name__ == '__main__':
     for rule in learning_rules:
         plt.plot(x_values, avg_weight_distributions[rule], marker='o', linestyle='-', label=f'{rule}')
 
-    # Plot the uniform distribution (horizontal line)
-    plt.plot(x_values, uniform_distribution, linestyle='--', color='black', label='Random State', alpha=0.5)
+    plt.plot(x_values, uniform_distribution, linestyle='--', color='gray', alpha=0.5, label='Uniform Distribution')
+
     plt.xlabel('Weight values')
     plt.ylabel('Proportion')
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()

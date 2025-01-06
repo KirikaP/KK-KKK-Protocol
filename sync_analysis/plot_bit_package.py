@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
+import os
 
 def load_results_from_custom_csv(file_path):
     df = pd.read_csv(file_path, header=[0, 1], index_col=0)
@@ -64,5 +65,10 @@ if __name__ == "__main__":
     ax.set_zticks(y_ticks)  # 设置Z轴刻度，每100显示一个
 
     plt.tight_layout()
-    plt.savefig("./figures/transparent/t_sync_bit_package_multi_rule_loaded_3d.png", transparent=True)
+
+    # Ensure the directory exists
+    output_file = "./figures/transparent/t_sync_bit_package_multi_rule_loaded_3d.png"
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    plt.savefig(output_file, transparent=True)
     plt.show()

@@ -80,6 +80,9 @@ if __name__ == "__main__":
         for ratio in ratios:
             results.append([L, N, K, ratio, success_rate])
 
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     # Save to CSV file
     df = pd.DataFrame(results, columns=["L", "N", "K", "Ratio", "Success Rate"])
     df.to_csv(output_file, index=False)

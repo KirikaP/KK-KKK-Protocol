@@ -54,6 +54,10 @@ def plot_results(N_values, N_step_counts, L, K, bin_width=30, colors=None):
     plt.xlim(0, max_t_sync)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()
 

@@ -86,6 +86,9 @@ def attacker_learn(L, N, K, sync_target, rule, num_simulations, max_workers):
 
 
 if __name__ == "__main__":
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(csv_file), exist_ok=True)
+
     if os.path.exists(csv_file):
         existing_data = pd.read_csv(csv_file)
     else:

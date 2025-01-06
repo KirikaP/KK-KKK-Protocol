@@ -67,10 +67,17 @@ def plot_sync_probs(simulation_results, L, K, num_intervals=20, smooth=True):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()
 
 def save_results_to_csv(simulation_results, file_path):
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     df = pd.DataFrame(dict([(label, pd.Series(sync_steps)) for label, sync_steps in simulation_results.items()]))    
     df.to_csv(file_path, index=False)
     print(f"Data saved to {file_path}")

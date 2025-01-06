@@ -44,6 +44,9 @@ def run_experiments(N_values, B_values, num_runs=5000):
     return B_values, all_results
 
 def save_results_to_csv(B_values, all_results, file_path):
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     df = pd.DataFrame(all_results, index=B_values)
     df.index.name = "Bit Package Size (B)"    
     df.to_csv(file_path)
@@ -80,7 +83,11 @@ if __name__ == "__main__":
     plt.yticks(y_ticks)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend(loc='upper center')
-    plt.tight_layout()    
+    plt.tight_layout()
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()
 

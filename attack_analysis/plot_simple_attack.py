@@ -2,8 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import os
 
 def plot_simple_attack(csv_file, bin_width=0.01):
+    if not os.path.exists(csv_file):
+        print(f"File {csv_file} does not exist.")
+        return
+    
     data = pd.read_csv(csv_file)
     
     N_values = sorted(data['N'].unique())
@@ -47,7 +52,11 @@ def plot_simple_attack(csv_file, bin_width=0.01):
     ax.legend(title="N Values", loc='best')
     plt.tight_layout()
 
-    plt.savefig("./figures/transparent/attack_simple.png", transparent=True)
+    # Ensure the directory exists
+    output_file = "./figures/transparent/attack_simple.png"
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    plt.savefig(output_file, transparent=True)
 
     plt.show()
 

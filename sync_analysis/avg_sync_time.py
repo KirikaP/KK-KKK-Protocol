@@ -58,10 +58,18 @@ def plot_results(N_values, results_dict):
     # Add a legend to differentiate learning rules
     plt.legend()
     plt.tight_layout()
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
+    # Save the figure
     plt.savefig(figure_file, transparent=True)
     plt.show()
 
 def save_results_to_csv(N_values, results_dict, file_path):
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     df = pd.DataFrame({
         'N': N_values,
         'Hebbian': results_dict['hebbian'],

@@ -28,6 +28,9 @@ def calculate_uniform_entropy(L):
     return np.log2(2 * L + 1)
 
 def save_entropy_to_csv(L_values, all_avg_entropy, uniform_entropies, file_path):
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     # Create a DataFrame to store the entropy values
     df = pd.DataFrame({'L': L_values, 'Uniform Entropy': uniform_entropies})
     
@@ -65,6 +68,10 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()
 

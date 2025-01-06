@@ -2,8 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import os
 
 def plot_simple_attack(csv_file, bin_width=0.01):
+    if not os.path.exists(csv_file):
+        print(f"File {csv_file} does not exist.")
+        return
+    
     data = pd.read_csv(csv_file)
     
     rules = data['Rule'].unique()
@@ -27,7 +32,7 @@ def plot_simple_attack(csv_file, bin_width=0.01):
     ax.set_ylabel('P(r)')
     ax.grid(True, linestyle='--', alpha=0.3)
 
-    # 插入小图显示 Ratio > 1.0 的分布
+    # Insert small plot to show distribution of Ratio > 1.0
     ax_inset = inset_axes(ax, width="75%", height="15%", loc='right')
 
     for rule in rules:
@@ -48,10 +53,14 @@ def plot_simple_attack(csv_file, bin_width=0.01):
     ax.legend(title="Learning Rules", loc='best')
     plt.tight_layout()
 
-    plt.savefig("./figures/transparent/attack_simple_various_rules.png", transparent=True)
+    # Ensure the directory exists
+    output_file = "./figures/transparent/attack_simple_various_rules.png"
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    plt.savefig(output_file, transparent=True)
 
     plt.show()
 
 if __name__ == "__main__":
-    csv_file = "./result/simple_attack_various_rules.csv"  # 使用不同规则的 CSV 文件
+    csv_file = "./result/simple_attack_various_rules.csv"  # CSV file with different rules
     plot_simple_attack(csv_file)

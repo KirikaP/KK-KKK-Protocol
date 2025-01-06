@@ -24,6 +24,9 @@ def calculate_boundary_probability(W, L):
     return boundary_weights / total_weights
 
 def save_results_to_csv(L_values, all_avg_boundary_probs, theoretical_boundary_probs, file_path):
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
     df = pd.DataFrame({'L': L_values, 'Theoretical': theoretical_boundary_probs})
 
     for rule, boundary_probs in all_avg_boundary_probs.items():
@@ -57,6 +60,10 @@ if __name__ == '__main__':
     plt.legend()
     plt.tight_layout()
     plt.grid(True)
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(figure_file), exist_ok=True)
+
     plt.savefig(figure_file, transparent=True)
     plt.show()
 
